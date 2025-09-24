@@ -11,6 +11,8 @@ import { UniKernelModal } from "./modals/UniKernelModal";
 import type { IShape, ILine } from "./shapes/types";
 import { EShapeType } from "./shapes/types";
 import { startCase } from "lodash";
+import { SemanticAnalysisModal } from "./modals/SemanticAnalysisModal";
+import { performSemanticAnalysis } from "./semantics/SemanticAnalysis";
 
 const SHAPE_WIDTH = 120;
 const SHAPE_HEIGHT = 60;
@@ -28,6 +30,7 @@ function App() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingShape, setEditingShape] = useState<IShape | null>(null);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   console.log("shapes", shapes);
 
@@ -284,6 +287,7 @@ function App() {
           Connect Event
         </button>
         <button onClick={deleteSelected}>Delete Shape</button>
+        <button className="button-main" onClick={() => {setShowAnalysisModal(true)}}>Check validity</button>
       </div>
       <Stage width={window.innerWidth} height={window.innerHeight}>
         <Layer>
@@ -323,6 +327,11 @@ function App() {
           initial={editingShape!}
         />
       )}
+      <SemanticAnalysisModal
+          open={showAnalysisModal}
+          onClose={() => setShowAnalysisModal(false)}
+          initial={performSemanticAnalysis(shapes)}
+        />
     </div>
   );
 }
