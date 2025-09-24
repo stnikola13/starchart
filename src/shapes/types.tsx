@@ -48,3 +48,6 @@ export interface ILine {
   from: string;
   to: string;
 }
+
+export type Node = IShape;
+export type Graph = IShape[];

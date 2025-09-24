@@ -26,15 +26,19 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
           <DialogTitle className="text-lg font-bold mb-4 text-black">
             Validity report
           </DialogTitle>
-            <div>
-                {data.map((message,idx)=>(
-                    <div key={idx}>
-                        <label className="block text-black text-sm font-medium mb-1">
-                            {(idx+1) + ". " + message}
-                        </label>
-                    </div>
-                ))}
-            </div>
+            {data.length === 0 ? 
+            (<label className="block text-black text-sm font-medium mb-1">No issues found. The graph is semantically valid.</label>)
+             : (
+              <div>
+                  {data.map((message,idx)=>(
+                      <div key={idx}>
+                          <label className="block text-black text-sm font-medium mb-1">
+                              {(idx+1) + ". " + message}
+                          </label>
+                      </div>
+                  ))}
+              </div>
+             ) }
             <div className="flex justify-center mt-4">
                 <button type="button" className="px-3 py-1 rounded bg-blue-600 text-white" onClick={onClose}>OK</button>
             </div>

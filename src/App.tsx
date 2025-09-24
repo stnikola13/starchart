@@ -12,7 +12,7 @@ import type { IShape, ILine } from "./shapes/types";
 import { EShapeType } from "./shapes/types";
 import { startCase } from "lodash";
 import { SemanticAnalysisModal } from "./modals/SemanticAnalysisModal";
-import { performSemanticAnalysis } from "./semantics/SemanticAnalysis";
+import { performGraphSemanticAnalysis } from "./semantics/GraphAnalyzer";
 
 const SHAPE_WIDTH = 120;
 const SHAPE_HEIGHT = 60;
@@ -330,7 +330,7 @@ function App() {
       <SemanticAnalysisModal
           open={showAnalysisModal}
           onClose={() => setShowAnalysisModal(false)}
-          initial={performSemanticAnalysis(shapes)}
+          initial={performGraphSemanticAnalysis(shapes)}
         />
     </div>
   );
