@@ -5,6 +5,12 @@ export enum EShapeType {
   DATA_SOURCE = "data_source",
 }
 
+export enum ELineType {
+  HARD_LINK = "hard",
+  SOFT_LINK = "soft",
+  EVENT_LINK = "event"
+}
+
 export interface IShape {
   id: string;
   type: EShapeType;

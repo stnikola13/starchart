@@ -1,39 +1,53 @@
-import type { Node, Graph } from "../shapes/types";
-import type { Error, ErrorReporter } from "./ErrorReporter";
+import { type Node, type Graph, ELineType } from "../shapes/types";
+import type { Diagnostic, ErrorReporter } from "./ErrorReporter";
 import type { GraphVisitor } from "./GraphVisitor";
 import { SemanticVisitor } from "./SemanticVisitor";
 import { SerializationVisitor } from "./SerializationVisitor";
 
 class GraphAnalyzer implements ErrorReporter {
-  private errors: Error[] = [];
+  private errors: Diagnostic[] = [];
   private nodeMap: Map<string, Node>;
 
   constructor(private graph: Graph) {
     this.nodeMap = new Map(graph.map(n => [n.id, n]));
   }
 
-  report(error: Error): void {
+  report(error: Diagnostic): void {
     this.errors.push(error);
   }
 
-  run(visitor: GraphVisitor): Record<string, Error[]> {
+  run(visitor: GraphVisitor): Record<string, Diagnostic[]> {
     this.errors = [];
     visitor.enterGraph?.(this.graph);
 
     for (const node of this.graph) {
       visitor.visitNode?.(node, this.graph, this);
 
-      // for (const neighborId of node.neighbors) {
-      //   const neighbor = this.nodeMap.get(neighborId);
-      //   if (neighbor) {
-      //      visitor.visitEdge?.(node, neighbor, this.graph, this);
-      //   }
-      // }
+      for (const neighborId of node.connectedTo??[]) {
+        const neighbor = this.nodeMap.get(neighborId);
+        if (neighbor) {
+           visitor.visitEdge?.(ELineType.HARD_LINK, node, neighbor, this.graph, this);
+        }
+      }
+
+      for (const neighborId of node.softConnectedTo??[]) {
+        const neighbor = this.nodeMap.get(neighborId);
+        if (neighbor) {
+           visitor.visitEdge?.(ELineType.SOFT_LINK, node, neighbor, this.graph, this);
+        }
+      }
+
+      for (const neighborId of node.eventConnectedTo??[]) {
+        const neighbor = this.nodeMap.get(neighborId);
+        if (neighbor) {
+           visitor.visitEdge?.(ELineType.EVENT_LINK, node, neighbor, this.graph, this);
+        }
+      }
     }
 
     visitor.exitGraph?.(this.graph);
 
-    const groupedErrors = this.errors.reduce<Record<string, Error[]>>((acc, err) => {
+    const groupedErrors = this.errors.reduce<Record<string, Diagnostic[]>>((acc, err) => {
       const key = err.nodeId ?? "global"; // fallback for graph-wide errors
       if (!acc[key]) acc[key] = [];
       acc[key].push(err);
@@ -44,9 +58,9 @@ class GraphAnalyzer implements ErrorReporter {
   }
 }
 
-export function performGraphSemanticAnalysis(graph: Graph): Record<string, Error[]> {
+export function performGraphSemanticAnalysis(graph: Graph): Record<string, Diagnostic[]> {
     const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
-    const errors: Record<string, Error[]> = analyzer.run(new SemanticVisitor());
+    const errors: Record<string, Diagnostic[]> = analyzer.run(new SemanticVisitor());
     
     return errors;
 }

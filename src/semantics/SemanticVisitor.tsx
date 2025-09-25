@@ -1,10 +1,27 @@
-import type { Node, Graph, IDataSource, IUniKernel } from "../shapes/types";
+import { type Node, type Graph, type IDataSource, type IUniKernel, EShapeType, ELineType } from "../shapes/types";
 import { checkEnvironmentVariableFormat, checkImageFormat, checkMemoryFormat, checkNetworkFormat, checkPathFormat, checkPortMappingFormat, checkTargetFormat, checkVolumeFormat, isAlphanumeric } from "./AnalysisUtils";
 import type { ErrorReporter } from "./ErrorReporter";
 import type { GraphVisitor } from "./GraphVisitor";
 import { v4 as uuidv4 } from "uuid";
 
+const allowedConnections: Record<string, Record<string, ELineType[]>> = {
+  "stored_procedure": { "data_source": [ELineType.SOFT_LINK, ELineType.HARD_LINK] },
+  "data_source": { "stored_procedure": [ELineType.SOFT_LINK, ELineType.HARD_LINK], "event_trigger": [ELineType.SOFT_LINK, ELineType.HARD_LINK] },
+  "event_trigger": { "data_source": [ELineType.SOFT_LINK, ELineType.HARD_LINK], "event": [ELineType.EVENT_LINK] },
+  "event": {}
+};
+
+const displayTypeNames: Map<string, string> = new Map([
+  ["stored_procedure", "stored procedure"],
+  ["data_source", "data source"],
+  ["event_trigger", "event trigger"],
+  ["event", "event"]
+]);
+
 export class SemanticVisitor implements GraphVisitor {
+    private seenEdges = new Set<string>();
+    private hardLinkCounts = new Map<string, number>();
+
     visitNode(node: Node, _graph: Graph, reporter: ErrorReporter): void {
         // Common checks for all nodes.
         const validName: boolean = this.checkNodeName(node);
@@ -18,7 +35,7 @@ export class SemanticVisitor implements GraphVisitor {
         }
 
         // DataSource specific checks.
-        if (node.type === "data_source") {
+        if (node.type === EShapeType.DATA_SOURCE) {
             const data_source = node as IDataSource;
 
             const validPath: boolean = this.checkDataSourcePath(data_source);
@@ -186,7 +203,7 @@ export class SemanticVisitor implements GraphVisitor {
             }
 
             // Event specific checks.
-            if (node.type === "event") {
+            if (node.type === EShapeType.EVENT) {
                 const validTopic: boolean = this.checkEventTopic(unikernel);
                 if (!validTopic) {
                     reporter.report({
@@ -198,6 +215,73 @@ export class SemanticVisitor implements GraphVisitor {
                 }
             }
         }
+    }
+
+
+    visitEdge(edgeType: ELineType, from: Node, to: Node, _graph: Graph, reporter: ErrorReporter): void {
+        // Rule 5: No self-loops
+        if (from.id === to.id) {
+            reporter.report({
+                id: uuidv4(),
+                message: `Self-loop detected. Node connects to itself.`,
+                nodeId: from.id,
+            });
+        }
+
+        // Rule 4: Only one edge allowed between two distinct nodes
+        const edgeKey = [from.id, to.id].sort().join("-");
+        if (this.seenEdges.has(edgeKey)) {
+            reporter.report({
+                id: uuidv4(),
+                message: `Duplicate edge detected between this node and '${to.name}' (${displayTypeNames.get(to.type)}).`,
+                nodeId: from.id,
+            });
+        } 
+        else this.seenEdges.add(edgeKey);
+
+        // Rule 1–3 + implicit Rule 7 (all else is invalid):
+        const allowed = allowedConnections[from.type]?.[to.type] ?? [];
+        if (!allowed.includes(edgeType)) {
+            reporter.report({
+                id: uuidv4(),
+                message: `Invalid connection from this node to ${to.name} (${displayTypeNames.get(to.type)}) with ${edgeType} link.`,
+                nodeId: from.id,
+            });
+        }
+
+        // Rule 6: DS can only have one HL
+        if (edgeType === ELineType.HARD_LINK) {
+            if (to.type === EShapeType.DATA_SOURCE) {
+                const count = this.hardLinkCounts.get(to.id) ?? 0;
+                if (count >= 1) {
+                    reporter.report({
+                        id: uuidv4(),
+                        message: `This data source already has a hard link. Multiple hard links are not permitted.`,
+                        nodeId: to.id,
+                    });
+                } else this.hardLinkCounts.set(to.id, count + 1);
+            }
+            if (from.type === EShapeType.DATA_SOURCE) {
+                const count = this.hardLinkCounts.get(from.id) ?? 0;
+                if (count >= 1) {
+                    reporter.report({
+                        id: uuidv4(),
+                        message: `This data source already has a hard link. Multiple hard links are not permitted.`,
+                        nodeId: from.id,
+                    });
+                } else this.hardLinkCounts.set(from.id, count + 1);
+            }
+        }
+    }
+
+    // Resets state before analyzing a new graph.
+    enterGraph(_graph: Graph): void {
+        this.seenEdges = new Set<string>();
+        this.hardLinkCounts = new Map<string, number>();
+    }
+
+    exitGraph(_graph: Graph): void {
+
     }
 
 

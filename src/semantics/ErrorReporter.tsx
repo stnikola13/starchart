@@ -1,4 +1,4 @@
-export interface Error {
+export interface Diagnostic {
   id: string;
   message: string;
   nodeId?: string;
@@ -7,6 +7,6 @@ export interface Error {
 }
 
 export interface ErrorReporter {
-  report(error: Error): void;
+  report(error: Diagnostic): void;
 }
 

@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import type { Error } from "../semantics/ErrorReporter";
+import type { Diagnostic } from "../semantics/ErrorReporter";
 
 interface SemanticAnalysisModalProps {
   open: boolean;
   onClose: () => void;
-  initial: Record<string, Error[]>; 
+  initial: Record<string, Diagnostic[]>; 
 }
 
 export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
@@ -13,7 +13,7 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
   onClose,
   initial,
 }) => {
-  const [data, setData] = useState<Record<string, Error[]>>(initial);
+  const [data, setData] = useState<Record<string, Diagnostic[]>>(initial);
 
   React.useEffect(() => {
     setData(initial);
