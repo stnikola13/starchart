@@ -13,6 +13,7 @@ import { EShapeType } from "./shapes/types";
 import { startCase } from "lodash";
 import { SemanticAnalysisModal } from "./modals/SemanticAnalysisModal";
 import { performGraphSemanticAnalysis } from "./semantics/GraphAnalyzer";
+import type { Error } from "./semantics/ErrorReporter";
 
 const SHAPE_WIDTH = 120;
 const SHAPE_HEIGHT = 60;

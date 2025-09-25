@@ -16,7 +16,7 @@ class GraphAnalyzer implements ErrorReporter {
     this.errors.push(error);
   }
 
-  run(visitor: GraphVisitor): Error[] {
+  run(visitor: GraphVisitor): Record<string, Error[]> {
     this.errors = [];
     visitor.enterGraph?.(this.graph);
 
@@ -33,15 +33,22 @@ class GraphAnalyzer implements ErrorReporter {
 
     visitor.exitGraph?.(this.graph);
 
-    return this.errors;
+    const groupedErrors = this.errors.reduce<Record<string, Error[]>>((acc, err) => {
+      const key = err.nodeId ?? "global"; // fallback for graph-wide errors
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(err);
+      return acc;
+    }, {});
+
+    return groupedErrors;
   }
 }
 
-export function performGraphSemanticAnalysis(graph: Graph): string[] {
+export function performGraphSemanticAnalysis(graph: Graph): Record<string, Error[]> {
     const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
-    const errors: Error[] = analyzer.run(new SemanticVisitor());
+    const errors: Record<string, Error[]> = analyzer.run(new SemanticVisitor());
     
-    return errors.map(e => e.message);
+    return errors;
 }
 
 export function performGraphSerialization(graph: Graph): boolean {

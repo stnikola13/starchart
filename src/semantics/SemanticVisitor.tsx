@@ -1,17 +1,17 @@
-import type { Node, Graph, IDataSource, IShape } from "../shapes/types";
-import { isAlphanumeric } from "./AnalysisUtils";
+import type { Node, Graph, IDataSource, IUniKernel } from "../shapes/types";
+import { checkEnvironmentVariableFormat, checkImageFormat, checkMemoryFormat, checkNetworkFormat, checkPathFormat, checkPortMappingFormat, checkTargetFormat, checkVolumeFormat, isAlphanumeric } from "./AnalysisUtils";
 import type { ErrorReporter } from "./ErrorReporter";
 import type { GraphVisitor } from "./GraphVisitor";
 import { v4 as uuidv4 } from "uuid";
 
 export class SemanticVisitor implements GraphVisitor {
-    visitNode(node: Node, graph: Graph, reporter: ErrorReporter): void {
+    visitNode(node: Node, _graph: Graph, reporter: ErrorReporter): void {
         // Common checks for all nodes.
         const validName: boolean = this.checkNodeName(node);
         if (!validName) {
             reporter.report({
                 id: uuidv4(),
-                message: `Node with ID ${node.id} has an invalid name ('${node.name}').`,
+                message: `Node has an invalid name: ${node.name}.`,
                 nodeId: node.id,
                 details: { name: node.name }
             });
@@ -25,7 +25,7 @@ export class SemanticVisitor implements GraphVisitor {
             if (!validPath) {
                 reporter.report({
                     id: uuidv4(),
-                    message: `Node with ID ${data_source.id} has an invalid path ('${data_source.path}').`,
+                    message: `Node has an invalid path: ${data_source.path}.`,
                     nodeId: data_source.id,
                     details: { path: data_source.path }
                 });
@@ -35,7 +35,7 @@ export class SemanticVisitor implements GraphVisitor {
             if (!validResourceName) {
                 reporter.report({
                     id: uuidv4(),
-                    message: `Node with ID ${data_source.id} has an invalid resource name ('${data_source.resourceName}').`,
+                    message: `Node has an invalid resource name: ${data_source.resourceName}.`,
                     nodeId: data_source.id,
                     details: { resourceName: data_source.resourceName }
                 });
@@ -45,7 +45,7 @@ export class SemanticVisitor implements GraphVisitor {
             if (!validDataType) {
                 reporter.report({
                     id: uuidv4(),
-                    message: `Node with ID ${data_source.id} has an invalid data type ('${data_source.dataType}').`,
+                    message: `Node has an invalid data type: ${data_source.dataType}.`,
                     nodeId: data_source.id,
                     details: { dataType: data_source.dataType }
                 });
@@ -55,7 +55,7 @@ export class SemanticVisitor implements GraphVisitor {
             if (!validDescription) {
                 reporter.report({
                     id: uuidv4(),
-                    message: `Node with ID ${data_source.id} has an invalid description ('${data_source.description}').`,
+                    message: `Node has an invalid description: ${data_source.description}.`,
                     nodeId: data_source.id,
                     details: { description: data_source.description }
                 });
@@ -63,42 +63,265 @@ export class SemanticVisitor implements GraphVisitor {
         }
         // StoredProcedure, EventTrigger, Event specific checks.
         else {
-            
+            const unikernel = node as IUniKernel;
+
+            const validImage: boolean = this.checkUniKernelImage(unikernel);
+            if (!validImage) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has an invalid image: ${unikernel.image}.`,
+                    nodeId: unikernel.id,
+                    details: { image: unikernel.image }
+                });
+            }
+
+            const validArgs: boolean = this.checkUniKernelArgs(unikernel);
+            if (!validArgs) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has invalid kernel arguments: ${unikernel.args}.`,
+                    nodeId: unikernel.id,
+                    details: { args: unikernel.args }
+                });
+            }
+
+            const validPrefix: boolean = this.checkUniKernelPrefix(unikernel);
+            if (!validPrefix) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has an invalid prefix: ${unikernel.prefix}.`,
+                    nodeId: unikernel.id,
+                    details: { prefix: unikernel.prefix }
+                });
+            }
+
+            const validDisableVirt: boolean = this.checkUniKernelDisableVirt(unikernel);
+            if (!validDisableVirt) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has an invalid disableVirt value: ${unikernel.disableVirt}.`,
+                    nodeId: unikernel.id,
+                    details: { disableVirt: unikernel.disableVirt }
+                });
+            }
+
+            const validRunDetached: boolean = this.checkUniKernelRunDetached(unikernel);
+            if (!validRunDetached) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has an invalid runDetached value: ${unikernel.runDetached}.`,
+                    nodeId: unikernel.id,
+                    details: { runDetached: unikernel.runDetached }
+                });
+            }
+
+            const validRemoveOnStop: boolean = this.checkUniKernelRemoveOnStop(unikernel);
+            if (!validRemoveOnStop) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has an invalid removeOnStop value: ${unikernel.removeOnStop}.`,
+                    nodeId: unikernel.id,
+                    details: { removeOnStop: unikernel.removeOnStop }
+                });
+            }
+
+            const invalidNetworks: any[] = this.checkUniKernelNetworks(unikernel);
+            if (invalidNetworks.length > 0) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has invalid networks: ${invalidNetworks.join(", ")}.`,
+                    nodeId: unikernel.id,
+                    details: { networks: invalidNetworks }
+                });
+            }
+
+            const invalidPorts: any[] = this.checkUniKernelPorts(unikernel);
+            if (invalidPorts.length > 0) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has invalid port mappings: ${invalidPorts.join(", ")}.`,
+                    nodeId: unikernel.id,
+                    details: { ports: invalidPorts }
+                });
+            }
+
+            const invalidVolumes: any[] = this.checkUniKernelVolumes(unikernel);
+            if (invalidVolumes.length > 0) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has invalid volumes: ${invalidVolumes.join(", ")}.`,
+                    nodeId: unikernel.id,
+                    details: { volumes: invalidVolumes }
+                });
+            }
+
+            const invalidTargets: any[] = this.checkUniKernelTargets(unikernel);
+            if (invalidTargets.length > 0) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has invalid targets: ${invalidTargets.join(", ")}.`,
+                    nodeId: unikernel.id,
+                    details: { targets: invalidTargets }
+                });
+            }
+
+            const invalidEnvVars: any[] = this.checkUniKernelEnvVars(unikernel);
+            if (invalidEnvVars.length > 0) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has invalid environment variables: ${invalidEnvVars.join(", ")}.`,
+                    nodeId: unikernel.id,
+                    details: { envVars: invalidEnvVars }
+                });
+            }
+
+            const validMemory: boolean = this.checkUniKernelMemory(unikernel);
+            if (!validMemory) {
+                reporter.report({
+                    id: uuidv4(),
+                    message: `Node has invalid memory data: ${unikernel.memory}.`,
+                    nodeId: unikernel.id,
+                    details: { memory: unikernel.memory }
+                });
+            }
+
+            // Event specific checks.
+            if (node.type === "event") {
+                const validTopic: boolean = this.checkEventTopic(unikernel);
+                if (!validTopic) {
+                    reporter.report({
+                        id: uuidv4(),
+                        message: `Node has an invalid topic: ${unikernel.topic}.`,
+                        nodeId: unikernel.id,
+                        details: { topic: unikernel.topic }
+                    });
+                }
+            }
         }
     }
+
 
     // Common fields for all nodes.
     checkNodeName(node: Node): boolean {
-        if (!node.name || node.name.length === 0 || !isAlphanumeric(node.name)) {
-            return false;
-        }
+        if (!node.name || node.name.length === 0 || !isAlphanumeric(node.name)) return false;
         return true;
     }
 
+
     // DataSource specific fields.
     checkDataSourcePath(node: IDataSource): boolean {
-        if (!node.path || node.path.length === 0 || !isAlphanumeric(node.path)) {
-            return false;
-        }
+        if (!node.path || node.path.length === 0 || !checkPathFormat(node.path)) return false;
         return true;
     }
 
     checkDataSourceResourceName(node: IDataSource): boolean {
-        if (!node.resourceName || node.resourceName.length === 0 || !isAlphanumeric(node.resourceName)) {
-            return false;
-        }
+        if (!node.resourceName || node.resourceName.length === 0 || !isAlphanumeric(node.resourceName)) return false;
         return true;
     }
 
     checkDataSourceDataType(node: IDataSource): boolean {
-        if (!node.dataType || (node.dataType !== "file" && node.dataType !== "folder")) {
-            return false;
-        }
+        if (!node.dataType) node.dataType = "file";
+        else if ((node.dataType !== "file" && node.dataType !== "folder")) return false;
         return true;
     }
 
-    checkDataSourceDescription(node: IDataSource): boolean {
+    checkDataSourceDescription(_node: IDataSource): boolean {
         // There are no specific restrictions for description.
+        return true;
+    }
+
+
+    // StoredProcedure, EventTrigger, Event specific fields.
+    checkUniKernelImage(node: IUniKernel): boolean {
+        if (!node.image || node.image.length === 0 || !checkImageFormat(node.image)) return false;
+        return true;
+    }
+
+    checkUniKernelArgs(_node: IUniKernel): boolean {
+        // There are no specific restrictions for args.
+        return true;
+    }
+
+    checkUniKernelPrefix(node: IUniKernel): boolean {
+        if (!node.prefix || node.prefix.length === 0) return true;
+        else if (!isAlphanumeric(node.prefix)) return false;
+        return true;
+    }
+
+    checkUniKernelDisableVirt(node: IUniKernel): boolean {
+        if (!node.disableVirt) node.disableVirt = false;
+        return true;
+    }
+
+    checkUniKernelRunDetached(node: IUniKernel): boolean {
+        if (!node.runDetached) node.runDetached = false;
+        return true;
+    }
+
+    checkUniKernelRemoveOnStop(node: IUniKernel): boolean {
+        if (!node.removeOnStop) node.removeOnStop = false;
+        return true;
+    }
+
+    checkUniKernelNetworks(node: IUniKernel): any[] {
+        if (!node.networks || node.networks.length === 0) return [];
+
+        let invalidEntries = [];
+        for (const [_index, network] of node.networks.entries()) {
+            if (!checkNetworkFormat(network)) invalidEntries.push(network);
+        }
+        return invalidEntries;
+    }
+
+    checkUniKernelPorts(node: IUniKernel): any[] {
+        if (!node.ports || node.ports.length === 0) return [];
+
+        let invalidEntries = [];
+        for (const [_index, portMapping] of node.ports.entries()) {
+            if (!checkPortMappingFormat(portMapping)) invalidEntries.push(portMapping);
+        }
+        return invalidEntries;
+    }
+
+    checkUniKernelVolumes(node: IUniKernel): any[] {
+        if (!node.volumes || node.volumes.length === 0) return [];
+
+        let invalidEntries = [];
+        for (const [_index, volume] of node.volumes.entries()) {
+            if (!checkVolumeFormat(volume)) invalidEntries.push(volume);
+        }
+        return invalidEntries;
+    }
+
+    checkUniKernelTargets(node: IUniKernel): any[] {
+        if (!node.targets || node.targets.length === 0) return [];
+
+        let invalidEntries = [];
+        for (const [_index, target] of node.targets.entries()) {
+            if (!checkTargetFormat(target)) invalidEntries.push(target);
+        }
+        return invalidEntries;
+    }
+
+    checkUniKernelEnvVars(node: IUniKernel): any[] {
+        if (!node.envVars || node.envVars.length === 0) return [];
+
+        let invalidEntries = [];
+        for (const [_index, envVar] of node.envVars.entries()) {
+            if (!checkEnvironmentVariableFormat(envVar)) invalidEntries.push(envVar);
+        }
+        return invalidEntries;
+    }
+
+    checkUniKernelMemory(node: IUniKernel): boolean {
+        if (!node.memory || node.memory.length === 0) return true;
+        else if (!checkMemoryFormat(node.memory)) return false;
+        return true;
+    }
+
+    // Event specific fields.
+    checkEventTopic(node: IUniKernel): boolean {
+        if (!node.topic || node.topic.length === 0 || !isAlphanumeric(node.topic)) return false;
         return true;
     }
 }

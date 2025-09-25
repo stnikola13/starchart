@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
+import type { Error } from "../semantics/ErrorReporter";
 
 interface SemanticAnalysisModalProps {
   open: boolean;
   onClose: () => void;
-  initial: string[]; 
+  initial: Record<string, Error[]>; 
 }
 
 export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
@@ -12,7 +13,7 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
   onClose,
   initial,
 }) => {
-  const [data, setData] = useState<string[]>(initial);
+  const [data, setData] = useState<Record<string, Error[]>>(initial);
 
   React.useEffect(() => {
     setData(initial);
@@ -26,21 +27,29 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
           <DialogTitle className="text-lg font-bold mb-4 text-black">
             Validity report
           </DialogTitle>
-            {data.length === 0 ? 
-            (<label className="block text-black text-sm font-medium mb-1">No issues found. The graph is semantically valid.</label>)
-             : (
-              <div>
-                  {data.map((message,idx)=>(
-                      <div key={idx}>
-                          <label className="block text-black text-sm font-medium mb-1">
-                              {(idx+1) + ". " + message}
-                          </label>
-                      </div>
+            {Object.keys(data).length === 0 ? (
+                <label className="block text-black text-sm font-medium mb-1">
+                  No issues found. The graph is semantically valid.
+                </label>
+              ) : (
+                <div>
+                  {Object.entries(data).map(([nodeId, diags]) => (
+                    <div key={nodeId} className="mb-4">
+                      <h3 className="font-semibold text-black mb-2">Node {nodeId}</h3>
+                      {diags.map((d, idx) => (
+                        <label
+                          key={idx}
+                          className="block text-red-600 text-sm font-medium mb-1"
+                        >
+                          {idx + 1}. {d.message}
+                        </label>
+                      ))}
+                    </div>
                   ))}
-              </div>
-             ) }
+                </div>
+              )}
             <div className="flex justify-center mt-4">
-                <button type="button" className="px-3 py-1 rounded bg-blue-600 text-white" onClick={onClose}>OK</button>
+                <button type="button" className="px-3 py-1 mt-3 rounded bg-blue-600 text-white" onClick={onClose}>OK</button>
             </div>
         </DialogPanel>
       </div>
