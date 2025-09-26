@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import type { Diagnostic } from "../semantics/ErrorReporter";
+import type { Diagnostic } from "../semantics/DiagnosticReporter";
 import type { Node } from "../shapes/types";
 import { displayTypeNames } from "../semantics/constants";
 
@@ -8,7 +8,7 @@ import { displayTypeNames } from "../semantics/constants";
 interface SemanticAnalysisModalProps {
   open: boolean;
   onClose: () => void;
-  initial: Map<string, [Node, Diagnostic[]]>; 
+  initial: Map<Node, Diagnostic[]>; 
 }
 
 export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
@@ -16,7 +16,7 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
   onClose,
   initial,
 }) => {
-  const [data, setData] = useState<Map<string, [Node, Diagnostic[]]>>(initial);
+  const [data, setData] = useState<Map<Node, Diagnostic[]>>(initial);
 
   React.useEffect(() => {
     setData(initial);
@@ -36,12 +36,12 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
               </label>
             ) : (
               <div>
-                {Array.from(data.entries()).map(([nodeId, [node, diags]]) => (
-                  <div key={nodeId} className="mb-4">
+                {Array.from(data.entries()).map(([node, diagnostics]) => (
+                  <div key={node.id} className="mb-4">
                     <h3 className="font-semibold text-black mb-2">
-                      Node '{node.name}' ({displayTypeNames.get(node.type)} with ID {nodeId})
+                      '{node.name}' ({displayTypeNames.get(node.type)} node with ID {node.id})
                     </h3>
-                    {diags.map((d, idx) => (
+                    {diagnostics.map((d, idx) => (
                       <label
                         key={idx}
                         className={`block text-sm font-medium mb-1 ${
