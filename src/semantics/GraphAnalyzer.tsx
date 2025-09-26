@@ -16,28 +16,28 @@ class GraphAnalyzer implements ErrorReporter {
     this.errors.push(error);
   }
 
-  run(visitor: GraphVisitor): Record<string, Diagnostic[]> {
+  run(visitor: GraphVisitor): Map<string, [Node, Diagnostic[]]> {
     this.errors = [];
     visitor.enterGraph?.(this.graph);
 
     for (const node of this.graph) {
       visitor.visitNode?.(node, this.graph, this);
 
-      for (const neighborId of node.connectedTo??[]) {
+      for (const neighborId of node.connectedTo ?? []) {
         const neighbor = this.nodeMap.get(neighborId);
         if (neighbor) {
            visitor.visitEdge?.(ELineType.HARD_LINK, node, neighbor, this.graph, this);
         }
       }
 
-      for (const neighborId of node.softConnectedTo??[]) {
+      for (const neighborId of node.softConnectedTo ?? []) {
         const neighbor = this.nodeMap.get(neighborId);
         if (neighbor) {
            visitor.visitEdge?.(ELineType.SOFT_LINK, node, neighbor, this.graph, this);
         }
       }
 
-      for (const neighborId of node.eventConnectedTo??[]) {
+      for (const neighborId of node.eventConnectedTo ?? []) {
         const neighbor = this.nodeMap.get(neighborId);
         if (neighbor) {
            visitor.visitEdge?.(ELineType.EVENT_LINK, node, neighbor, this.graph, this);
@@ -47,27 +47,29 @@ class GraphAnalyzer implements ErrorReporter {
 
     visitor.exitGraph?.(this.graph);
 
-    const groupedErrors = this.errors.reduce<Record<string, Diagnostic[]>>((acc, err) => {
-      const key = err.nodeId ?? "global"; // fallback for graph-wide errors
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(err);
-      return acc;
-    }, {});
+    let groupedErrors: Map<string, [Node, Diagnostic[]]> = new Map();
+    for (const err of this.errors) {
+      const key = err.nodeId ?? "global";
+      const node = this.nodeMap.get(key);
+      if (!node) continue;
+      if (!groupedErrors.has(key)) {
+        groupedErrors.set(key, [node, []]);
+      }
+      groupedErrors.get(key)?.[1].push(err);
+    }
 
     return groupedErrors;
   }
 }
 
-export function performGraphSemanticAnalysis(graph: Graph): Record<string, Diagnostic[]> {
+export function performGraphSemanticAnalysis(graph: Graph): Map<string, [Node, Diagnostic[]]> {
     const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
-    const errors: Record<string, Diagnostic[]> = analyzer.run(new SemanticVisitor());
-    
+    const errors: Map<string, [Node, Diagnostic[]]> = analyzer.run(new SemanticVisitor());
     return errors;
 }
 
 export function performGraphSerialization(graph: Graph): boolean {
     const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
     analyzer.run(new SerializationVisitor());
-
     return true;
 }
