@@ -37,17 +37,20 @@ class GraphAnalyzer implements DiagnosticReporter {
   run(visitor: GraphVisitor): Map<Node, Diagnostic[]> {
     // Resets the errors before each run, and calls the enterGraph method if defined.
     this.diagnostics = [];
-    visitor.enterGraph?.(this.graph);
+    visitor.enterGraph?.();
 
     // Visit all nodes.
     for (const node of this.graph) {
-      visitor.visitNode?.(node, this.graph, this);
+      visitor.visitNode?.(node, this);
+    }
 
+    // Visit all edges.
+    for (const node of this.graph) {
       // Visit all connected nodes (hard links).
       for (const neighborId of node.connectedTo ?? []) {
         const neighbor = this.nodeMap.get(neighborId);
         if (neighbor) {
-          visitor.visitEdge?.(ELineType.HARD_LINK, node, neighbor, this.graph, this);
+          visitor.visitEdge?.(ELineType.HARD_LINK, node, neighbor, this);
         }
       }
 
@@ -55,7 +58,7 @@ class GraphAnalyzer implements DiagnosticReporter {
       for (const neighborId of node.softConnectedTo ?? []) {
         const neighbor = this.nodeMap.get(neighborId);
         if (neighbor) {
-          visitor.visitEdge?.(ELineType.SOFT_LINK, node, neighbor, this.graph, this);
+          visitor.visitEdge?.(ELineType.SOFT_LINK, node, neighbor, this);
         }
       }
 
@@ -63,13 +66,13 @@ class GraphAnalyzer implements DiagnosticReporter {
       for (const neighborId of node.eventConnectedTo ?? []) {
         const neighbor = this.nodeMap.get(neighborId);
         if (neighbor) {
-          visitor.visitEdge?.(ELineType.EVENT_LINK, node, neighbor, this.graph, this);
+          visitor.visitEdge?.(ELineType.EVENT_LINK, node, neighbor, this);
         }
       }
     }
 
     // Calls the exitGraph method if defined.
-    visitor.exitGraph?.(this.graph);
+    visitor.exitGraph?.();
 
     // Groups errors by node and creates a map where the keys are nodes, and the values are lists of diagnostics objects.
     let groupedErrors: Map<Node, Diagnostic[]> = new Map();
@@ -96,6 +99,8 @@ class GraphAnalyzer implements DiagnosticReporter {
 export function performGraphSemanticAnalysis(graph: Graph): Map<Node, Diagnostic[]> {
   const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
   const errors: Map<Node, Diagnostic[]> = analyzer.run(new SemanticVisitor());
+  // TODO: OBAVEZNO OBRISATI
+  performGraphSerialization(graph);
   return errors;
 }
 
@@ -122,12 +127,16 @@ function checkSemanticAnalysisSuccess(diagnosticsMap: Map<Node, Diagnostic[]>): 
  */
 export function performGraphSerialization(graph: Graph): boolean {
 	// Checks if the graph has any semantic errors before proceeding with serialization.
-  if (!checkSemanticAnalysisSuccess(performGraphSemanticAnalysis(graph))) {
-    console.log("Graph has semantic errors. Aborting serialization.");
-    return false;
-  }
+  // if (!checkSemanticAnalysisSuccess(performGraphSemanticAnalysis(graph))) {
+  //   console.log("Graph has semantic errors. Aborting serialization.");
+  //   return false;
+  // }
 
   const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
-  analyzer.run(new SerializationVisitor());
+  const serializationVisitor: SerializationVisitor = new SerializationVisitor();
+  analyzer.run(serializationVisitor);
+
+  const yaml: string = serializationVisitor.getYAML();
+  console.log(yaml);
   return true;
 }

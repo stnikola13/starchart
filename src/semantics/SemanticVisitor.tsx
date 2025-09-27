@@ -1,4 +1,4 @@
-import { type Node, type Graph, type IDataSource, type IUniKernel, EShapeType, ELineType } from "../shapes/types";
+import { type Node, type IDataSource, type IUniKernel, EShapeType, ELineType } from "../shapes/types";
 import { checkEnvironmentVariableFormat, checkImageFormat, checkMemoryFormat, checkNetworkFormat, checkPathFormat, 
   checkPortMappingFormat, checkTargetFormat, checkVolumeFormat, isAlphanumeric } from "./AnalysisUtils";
 import { ESeverity, type DiagnosticReporter } from "./DiagnosticReporter";
@@ -16,11 +16,10 @@ export class SemanticVisitor implements GraphVisitor {
    * In case of invalid fields, diagnostics are reported using the provided DiagnosticReporter.
    *
    * @param node - The Node object that is being visited.
-   * @param _graph - The Graph object to which the node belongs to.
    * @param reporter - The DiagnosticReporter object used to report diagnostics.
    * @returns void.
    */
-  visitNode(node: Node, _graph: Graph, reporter: DiagnosticReporter): void {
+  visitNode(node: Node, reporter: DiagnosticReporter): void {
     // SECTION: Common checks for all nodes.
 
     // Checks if the node's name is valid. If not, reports an error.
@@ -292,11 +291,10 @@ export class SemanticVisitor implements GraphVisitor {
    * @param edgeType - The type of the edge (hard link, soft link, event link).
    * @param from - The source Node object of the edge.
    * @param to - The destination Node object of the edge.
-   * @param _graph - The Graph object to which the edge belongs to.
    * @param reporter - The DiagnosticReporter object used to report diagnostics.
    * @returns void.
    */
-  visitEdge(edgeType: ELineType, from: Node, to: Node, _graph: Graph, reporter: DiagnosticReporter): void {
+  visitEdge(edgeType: ELineType, from: Node, to: Node, reporter: DiagnosticReporter): void {
     // Checks if there are self-loops by comparing whether the source and destination node IDs are the same. If they are the same, reports an error.
     if (from.id === to.id) {
       reporter.report({
@@ -366,10 +364,9 @@ export class SemanticVisitor implements GraphVisitor {
   /**
    * Resets state before analyzing a new graph.
    *
-   * @param node - The Graph object that is being analyzed.
    * @returns void.
    */
-  enterGraph(_graph: Graph): void {
+  enterGraph(): void {
     this.nodeNames = new Set<string>();
     this.seenEdges = new Set<string>();
     this.hardLinkCounts = new Map<string, number>();
@@ -378,10 +375,9 @@ export class SemanticVisitor implements GraphVisitor {
   /**
    * Finalizes state after analyzing a graph.
    *
-   * @param node - The Graph object that is being analyzed.
    * @returns void.
    */
-  exitGraph(_graph: Graph): void {
+  exitGraph(): void {
     // Nothing to do here for now.
   }
 
@@ -393,7 +389,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The Node object that is being checked.
    * @returns Boolean indicating whether the node name is valid.
    */
-  checkNodeName(node: Node): boolean {
+  private checkNodeName(node: Node): boolean {
     if (!node.name || node.name.length === 0 || !isAlphanumeric(node.name))
       return false;
     return true;
@@ -407,7 +403,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The IDataSource object that is being checked.
    * @returns Boolean indicating whether the path is valid.
    */
-  checkDataSourcePath(node: IDataSource): boolean {
+  private checkDataSourcePath(node: IDataSource): boolean {
     if (!node.path || node.path.length === 0 || !checkPathFormat(node.path))
       return false;
     return true;
@@ -419,7 +415,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The IDataSource object that is being checked.
    * @returns Boolean indicating whether the resource name is valid.
    */
-  checkDataSourceResourceName(node: IDataSource): boolean {
+  private checkDataSourceResourceName(node: IDataSource): boolean {
     if (
       !node.resourceName ||
       node.resourceName.length === 0 ||
@@ -435,7 +431,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The IDataSource object that is being checked.
    * @returns Boolean indicating whether the data type is valid.
    */
-  checkDataSourceDataType(node: IDataSource): boolean {
+  private checkDataSourceDataType(node: IDataSource): boolean {
     // Default to 'file' if not specified.
     if (!node.dataType) node.dataType = "file";
     else if (node.dataType !== "file" && node.dataType !== "folder")
@@ -449,7 +445,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The IDataSource object that is being checked.
    * @returns Boolean indicating whether the description is valid.
    */
-  checkDataSourceDescription(_node: IDataSource): boolean {
+  private checkDataSourceDescription(_node: IDataSource): boolean {
     // There are no specific restrictions for description.
     return true;
   }
@@ -462,7 +458,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the image is valid.
    */
-  checkUniKernelImage(node: IUniKernel): boolean {
+  private checkUniKernelImage(node: IUniKernel): boolean {
     if (!node.image || node.image.length === 0 || !checkImageFormat(node.image))
       return false;
     return true;
@@ -474,7 +470,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the arguments are valid.
    */
-  checkUniKernelArgs(_node: IUniKernel): boolean {
+  private checkUniKernelArgs(_node: IUniKernel): boolean {
     // There are no specific restrictions for args.
     return true;
   }
@@ -486,7 +482,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the prefix is valid.
    */
-  checkUniKernelPrefix(node: IUniKernel): boolean {
+  private checkUniKernelPrefix(node: IUniKernel): boolean {
     if (!node.prefix || node.prefix.length === 0) return true;
     else if (!isAlphanumeric(node.prefix)) return false;
     return true;
@@ -499,7 +495,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the disable virtualization field is valid.
    */
-  checkUniKernelDisableVirt(node: IUniKernel): boolean {
+  private checkUniKernelDisableVirt(node: IUniKernel): boolean {
     if (!node.disableVirt) node.disableVirt = false;
     return true;
   }
@@ -511,7 +507,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the run detached field is valid.
    */
-  checkUniKernelRunDetached(node: IUniKernel): boolean {
+  private checkUniKernelRunDetached(node: IUniKernel): boolean {
     if (!node.runDetached) node.runDetached = false;
     return true;
   }
@@ -523,7 +519,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the remove on stop field is valid.
    */
-  checkUniKernelRemoveOnStop(node: IUniKernel): boolean {
+  private checkUniKernelRemoveOnStop(node: IUniKernel): boolean {
     if (!node.removeOnStop) node.removeOnStop = false;
     return true;
   }
@@ -535,7 +531,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Array of invalid network entries. If the array is empty, all networks are valid.
    */
-  checkUniKernelNetworks(node: IUniKernel): any[] {
+  private checkUniKernelNetworks(node: IUniKernel): any[] {
     if (!node.networks || node.networks.length === 0) return [];
 
     let invalidEntries = [];
@@ -552,7 +548,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Array of invalid port entries. If the array is empty, all ports are valid.
    */
-  checkUniKernelPorts(node: IUniKernel): any[] {
+  private checkUniKernelPorts(node: IUniKernel): any[] {
     if (!node.ports || node.ports.length === 0) return [];
 
     let invalidEntries = [];
@@ -570,7 +566,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Array of invalid volume entries. If the array is empty, all volumes are valid.
    */
-  checkUniKernelVolumes(node: IUniKernel): any[] {
+  private checkUniKernelVolumes(node: IUniKernel): any[] {
     if (!node.volumes || node.volumes.length === 0) return [];
 
     let invalidEntries = [];
@@ -587,7 +583,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Array of invalid target entries. If the array is empty, all targets are valid.
    */
-  checkUniKernelTargets(node: IUniKernel): any[] {
+  private checkUniKernelTargets(node: IUniKernel): any[] {
     if (!node.targets || node.targets.length === 0) return [];
 
     let invalidEntries = [];
@@ -604,7 +600,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Array of invalid environtment variables entries. If the array is empty, all variables are valid.
    */
-  checkUniKernelEnvVars(node: IUniKernel): any[] {
+  private checkUniKernelEnvVars(node: IUniKernel): any[] {
     if (!node.envVars || node.envVars.length === 0) return [];
 
     let invalidEntries = [];
@@ -621,7 +617,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the memory string is valid.
    */
-  checkUniKernelMemory(node: IUniKernel): boolean {
+  private checkUniKernelMemory(node: IUniKernel): boolean {
     if (!node.memory || node.memory.length === 0) return true;
     else if (!checkMemoryFormat(node.memory)) return false;
     return true;
@@ -635,7 +631,7 @@ export class SemanticVisitor implements GraphVisitor {
    * @param node - The UniKernel object that is being checked.
    * @returns Boolean indicating whether the topic is valid.
    */
-  checkEventTopic(node: IUniKernel): boolean {
+  private checkEventTopic(node: IUniKernel): boolean {
     if (!node.topic || node.topic.length === 0 || !isAlphanumeric(node.topic))
       return false;
     return true;
