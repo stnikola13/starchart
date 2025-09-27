@@ -27,8 +27,8 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center">
         <DialogPanel className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-          <DialogTitle className="text-lg font-bold mb-4 text-black">
-            Validity report
+          <DialogTitle className="text-lg font-bold mb-5 text-black">
+            Invalid Graph - Semantic Analysis Results
           </DialogTitle>
             {data.size === 0 ? (
               <label className="block text-black text-sm font-medium mb-1">
@@ -56,7 +56,7 @@ export const SemanticAnalysisModal: React.FC<SemanticAnalysisModalProps> = ({
               </div>
             )}
             <div className="flex justify-center mt-4">
-                <button type="button" className="px-3 py-1 mt-3 rounded bg-blue-600 text-white" onClick={onClose}>OK</button>
+                <button type="button" className="px-3 py-1 mt-3 rounded bg-blue-600 text-white" onClick={onClose}>{data.size === 0 ? "OK" : "Back"}</button>
             </div>
         </DialogPanel>
       </div>

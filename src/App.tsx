@@ -12,7 +12,8 @@ import type { IShape, ILine } from "./shapes/types";
 import { EShapeType } from "./shapes/types";
 import { startCase } from "lodash";
 import { SemanticAnalysisModal } from "./modals/SemanticAnalysisModal";
-import { performGraphSemanticAnalysis } from "./semantics/GraphAnalyzer";
+import { performGraphSerialization } from "./semantics/Serialization";
+import { performGraphSemanticAnalysis } from "./semantics/Serialization";
 
 const SHAPE_WIDTH = 120;
 const SHAPE_HEIGHT = 60;
@@ -287,7 +288,10 @@ function App() {
           Connect Event
         </button>
         <button onClick={deleteSelected}>Delete Shape</button>
-        <button className="button-main" onClick={() => {setShowAnalysisModal(true)}}>Check validity</button>
+        <button className="button-main" onClick={() => {
+            const success = performGraphSerialization(shapes);
+            if (!success) setShowAnalysisModal(true);
+          }}>Save</button>
       </div>
       <Stage width={window.innerWidth} height={window.innerHeight}>
         <Layer>

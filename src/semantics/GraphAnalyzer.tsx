@@ -1,10 +1,8 @@
 import { type Node, type Graph, ELineType } from "../shapes/types";
-import { ESeverity, type Diagnostic, type DiagnosticReporter } from "./DiagnosticReporter";
+import { type Diagnostic, type DiagnosticReporter } from "./DiagnosticReporter";
 import type { GraphVisitor } from "./GraphVisitor";
-import { SemanticVisitor } from "./SemanticVisitor";
-import { SerializationVisitor } from "./SerializationVisitor";
 
-class GraphAnalyzer implements DiagnosticReporter {
+export class GraphAnalyzer implements DiagnosticReporter {
   private diagnostics: Diagnostic[] = [];
   private nodeMap: Map<string, Node>;
 
@@ -88,55 +86,4 @@ class GraphAnalyzer implements DiagnosticReporter {
 
     return groupedErrors;
   }
-}
-
-/**
- * Performs a semantic analysis run on the provided graph.
- *
- * @param graph - The Graph object to be analyzed.
- * @returns Map of nodes which are keys and lists of their associated diagnosed errors and warnings.
- */
-export function performGraphSemanticAnalysis(graph: Graph): Map<Node, Diagnostic[]> {
-  const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
-  const errors: Map<Node, Diagnostic[]> = analyzer.run(new SemanticVisitor());
-  // TODO: OBAVEZNO OBRISATI
-  performGraphSerialization(graph);
-  return errors;
-}
-
-/**
- * Checks if the semantic analysis succeeded without any errors (warnings are allowed).
- *
- * @param diagnosticsMap - Map of nodes which are keys and lists of their associated diagnosed errors and warnings.
- * @returns Boolean value indicating if there were any errors found during the semantic pass.
- */
-function checkSemanticAnalysisSuccess(diagnosticsMap: Map<Node, Diagnostic[]>): boolean {
-  for (const [_node, diagnostics] of diagnosticsMap) {
-    if (diagnostics.some((d) => d.severity === ESeverity.ERROR)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * Performs a serialization run on the provided graph.
- *
- * @param graph - The Graph object to be analyzed.
- * @returns Boolean value indicating the success of the serialization.
- */
-export function performGraphSerialization(graph: Graph): boolean {
-	// Checks if the graph has any semantic errors before proceeding with serialization.
-  // if (!checkSemanticAnalysisSuccess(performGraphSemanticAnalysis(graph))) {
-  //   console.log("Graph has semantic errors. Aborting serialization.");
-  //   return false;
-  // }
-
-  const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
-  const serializationVisitor: SerializationVisitor = new SerializationVisitor();
-  analyzer.run(serializationVisitor);
-
-  const yaml: string = serializationVisitor.getYAML();
-  console.log(yaml);
-  return true;
 }
