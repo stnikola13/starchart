@@ -1,6 +1,6 @@
 import { type Node, type IDataSource, type IUniKernel, EShapeType, ELineType } from "../shapes/types";
 import { checkEnvironmentVariableFormat, checkImageFormat, checkMemoryFormat, checkNetworkFormat, checkPathFormat, 
-  checkPortMappingFormat, checkTargetFormat, checkVolumeFormat, isAlphanumeric } from "./AnalysisUtils";
+  checkPortMappingFormat, checkTargetFormat, checkVolumeFormat, isAlphanumeric } from "./formatUtils";
 import { ESeverity, type DiagnosticReporter } from "./DiagnosticReporter";
 import type { GraphVisitor } from "./GraphVisitor";
 import { v4 as uuidv4 } from "uuid";
