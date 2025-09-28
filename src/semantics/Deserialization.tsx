@@ -9,14 +9,12 @@ function ensureId(id?: string): string {
 export function performGraphDeserialization(yamlString: string): Graph {
     try {
         const graph: Graph = deserializeGraph(yamlString);
+        // Podrazumeva da se semanticka analiza radi nakon rekonstrukcije (van ove funkcije)
         layoutGraph(graph);
-        // SEMANTICKA PROVERA!
         console.log(graph);
         return graph;
     }
     catch (err) {
-        console.error('Failed to parse file:', err);
-        alert('Invalid file format.');
         return [];
     } 
 }

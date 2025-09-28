@@ -8,13 +8,15 @@ import Event from "./shapes/Event";
 import EventTrigger from "./shapes/EventTrigger";
 import { DataSourceModal } from "./modals/DataSourceModal";
 import { UniKernelModal } from "./modals/UniKernelModal";
-import type { IShape, ILine } from "./shapes/types";
+import type { IShape, ILine, Node } from "./shapes/types";
 import { EShapeType } from "./shapes/types";
 import { startCase } from "lodash";
 import { SemanticAnalysisModal } from "./modals/SemanticAnalysisModal";
-import { performGraphSerialization } from "./semantics/Serialization";
+import { checkSemanticAnalysisSuccess, performGraphSerialization } from "./semantics/Serialization";
 import { performGraphSemanticAnalysis } from "./semantics/Serialization";
 import { getGraphEdges, performGraphDeserialization } from "./semantics/Deserialization";
+import { MessageModal } from "./modals/MessageModal";
+import type { Diagnostic } from "./semantics/DiagnosticReporter";
 
 const SHAPE_WIDTH = 120;
 const SHAPE_HEIGHT = 60;
@@ -31,7 +33,11 @@ function App() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingShape, setEditingShape] = useState<IShape | null>(null);
+
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [semanticAnalysisReport, setSemanticAnalysisReport] = useState<Map<Node, Diagnostic[]>>(new Map());
+  const [deserializationError, setDeserializationError] = useState<string>("");
 
   // Used for YAML file upload.
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -258,12 +264,34 @@ function App() {
     reader.onload = (e) => {
       const content = e.target?.result;
       if (typeof content === 'string') {
-        const graph = performGraphDeserialization(content)
-        const edges = getGraphEdges(graph);
-        setShapes(graph);
-        setLines(edges.lines);
-        setSoftLines(edges.softLines);
-        setEventLines(edges.eventLines);
+        const graph = performGraphDeserialization(content);
+
+        // If an error occurred during reconstruction.
+        if (graph.length == 0) {
+          setDeserializationError("Could not reconstruct graph. Check file format.");
+          setShowMessageModal(true);
+          return;
+        }
+
+        // Graph successfully reconstructed. Checking semantic validity.
+        const semanticAnalysisResults = performGraphSemanticAnalysis(graph);
+        const semanticCheck = checkSemanticAnalysisSuccess(semanticAnalysisResults);
+        if (semanticCheck) {
+          const edges = getGraphEdges(graph);
+          setShapes(graph);
+          setLines(edges.lines);
+          setSoftLines(edges.softLines);
+          setEventLines(edges.eventLines);
+
+          setDeserializationError("Graph successfully reconstructed!");
+          setShowMessageModal(true);
+        }
+        // If semantic analysis failed, show semantic analysis report.
+        else {
+          setDeserializationError("");
+          setSemanticAnalysisReport(semanticAnalysisResults);
+          setShowAnalysisModal(true);
+        }
       }
     };
     reader.onerror = () => {
@@ -315,12 +343,15 @@ function App() {
         </button>
         <button onClick={deleteSelected}>Delete Shape</button>
         <button className="button-main" onClick={() => {
-          fileInputRef.current?.click();
-        }}>Load from file</button>
+            fileInputRef.current?.click();
+          }}>Load from file
+        </button>
         <button className="button-main" onClick={() => {
-            const success = performGraphSerialization(shapes);
-            if (!success) setShowAnalysisModal(true);
-          }}>Save</button>
+              setSemanticAnalysisReport(performGraphSemanticAnalysis(shapes));
+              const success = performGraphSerialization(shapes);
+              if (!success) setShowAnalysisModal(true);
+            }}>Save
+        </button>
       </div>
 
       <Stage width={window.innerWidth} height={window.innerHeight}>
@@ -364,7 +395,12 @@ function App() {
       <SemanticAnalysisModal
           open={showAnalysisModal}
           onClose={() => setShowAnalysisModal(false)}
-          initial={performGraphSemanticAnalysis(shapes)}
+          initial={semanticAnalysisReport}
+        />
+      <MessageModal
+          open={showMessageModal}
+          onClose={() => setShowMessageModal(false)}
+          initial={deserializationError}
         />
       <input type="file" accept=".yaml,.yml" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
     </div>
