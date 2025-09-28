@@ -19,7 +19,7 @@ export interface IShape {
   isSelected: boolean;
   connectedTo?: string[];
   softConnectedTo?: string[];
-  eventConnectedTo?: string[]; // Samo za EventTrigger
+  eventConnectedTo?: string[];
   name: string;
 }
 

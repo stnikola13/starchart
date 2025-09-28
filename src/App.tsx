@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import type { KonvaEventObject } from "konva/lib/Node";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Stage, Layer, Line, Arrow } from "react-konva";
 import DataSource from "./shapes/DataSource";
 import StoredProcedure from "./shapes/StoredProcedure";
@@ -14,13 +14,13 @@ import { startCase } from "lodash";
 import { SemanticAnalysisModal } from "./modals/SemanticAnalysisModal";
 import { performGraphSerialization } from "./semantics/Serialization";
 import { performGraphSemanticAnalysis } from "./semantics/Serialization";
+import { getGraphEdges, performGraphDeserialization } from "./semantics/Deserialization";
 
 const SHAPE_WIDTH = 120;
 const SHAPE_HEIGHT = 60;
 
 function App() {
   const [shapes, setShapes] = useState<IShape[]>([]);
-  // Samo za renderovanje
   const [lines, setLines] = useState<ILine[]>([]);
   const [softLines, setSoftLines] = useState<ILine[]>([]);
   const [eventLines, setEventLines] = useState<ILine[]>([]);
@@ -32,6 +32,9 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingShape, setEditingShape] = useState<IShape | null>(null);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+
+  // Used for YAML file upload.
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   console.log("shapes", shapes);
 
@@ -247,6 +250,29 @@ function App() {
     });
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (typeof content === 'string') {
+        const graph = performGraphDeserialization(content)
+        const edges = getGraphEdges(graph);
+        setShapes(graph);
+        setLines(edges.lines);
+        setSoftLines(edges.softLines);
+        setEventLines(edges.eventLines);
+      }
+    };
+    reader.onerror = () => {
+      alert('Error reading file.');
+    };
+
+    reader.readAsText(file);
+  };
+
   return (
     <div style={{ position: "relative" }}>
       <div className="flex gap-2 p-2 justify-center">
@@ -289,10 +315,14 @@ function App() {
         </button>
         <button onClick={deleteSelected}>Delete Shape</button>
         <button className="button-main" onClick={() => {
+          fileInputRef.current?.click();
+        }}>Load from file</button>
+        <button className="button-main" onClick={() => {
             const success = performGraphSerialization(shapes);
             if (!success) setShowAnalysisModal(true);
           }}>Save</button>
       </div>
+
       <Stage width={window.innerWidth} height={window.innerHeight}>
         <Layer>
           {renderLines()}
@@ -336,6 +366,7 @@ function App() {
           onClose={() => setShowAnalysisModal(false)}
           initial={performGraphSemanticAnalysis(shapes)}
         />
+      <input type="file" accept=".yaml,.yml" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
     </div>
   );
 }
