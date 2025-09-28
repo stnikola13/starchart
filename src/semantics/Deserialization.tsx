@@ -2,106 +2,142 @@ import yaml from "js-yaml";
 import { v4 as uuidv4 } from "uuid";
 import { type IDataSource, type IUniKernel, type Node, type Graph, EShapeType, type ILine } from "../shapes/types";
 
-function ensureId(id?: string): string {
+/**
+ * Returns a node's ID if it exists, and in case it does not, it generates a new unique identifier.
+ *
+ * @param id - ID of a node (optional).
+ * @returns ID of a node.
+ */
+function checkID(id?: string): string {
   return id && id.trim().length > 0 ? id : uuidv4();
 }
 
+/**
+ * Calls the appropriate graph deserialization function on the provided serialized yaml string.
+ * Calls the function that determines the coordinates of the elements that are going to be displayed on the canvas.
+ *
+ * @param yamlString - Yaml string which contains the serialized graph.
+ * @returns Reconstructed graph object.
+ */
 export function performGraphDeserialization(yamlString: string): Graph {
-    try {
-        const graph: Graph = deserializeGraph(yamlString);
-        // Podrazumeva da se semanticka analiza radi nakon rekonstrukcije (van ove funkcije)
-        layoutGraph(graph);
-        console.log(graph);
-        return graph;
-    }
-    catch (err) {
-        return [];
-    } 
+  try {
+    // Calls the function that deserializes the yaml file and reconstructs the array of shapes.
+    // Calls the function that lays out all the elements by using an algorithm to determine the x and y
+    // coordinates of each node.
+    // Semantic analysis will be performed on the graph outside of this function.
+    const graph: Graph = deserializeGraph(yamlString);
+    layoutGraph(graph);
+    console.log(graph);
+    return graph;
+  }
+  catch (err) {
+    // In case of any error during deserialiation, an empty graph is returned as an indicator.
+    return [];
+  }
 }
 
+/**
+ * Reconstructs the link arrays which are used for the display of graph edges.
+ *
+ * @param graph - A graph object which contains all link data.
+ * @returns Object with keys hardLinks, softLinks, eventLink whose values are arrays of edge objects.
+ */
 export function getGraphEdges(graph: Graph): any {
-    let softLinks: ILine[] = [];
-    let hardLinks: ILine[] = [];
-    let eventLinks: ILine[] = [];
+  // Initializes all arrays.
+  let softLinks: ILine[] = [];
+  let hardLinks: ILine[] = [];
+  let eventLinks: ILine[] = [];
 
-    for (const node of graph) {
-    // Hard links
+  for (const node of graph) {
+    // Fetches all hard links of all nodes.
     if (node.connectedTo) {
-      for (const target of node.connectedTo) {
+      for (const destination of node.connectedTo) {
         hardLinks.push({
           id: uuidv4(),
           from: node.id,
-          to: target,
+          to: destination,
         });
       }
     }
 
-    // Soft links
+    // Fetches all soft links of all nodes.
     if (node.softConnectedTo) {
-      for (const target of node.softConnectedTo) {
+      for (const destination of node.softConnectedTo) {
         softLinks.push({
           id: uuidv4(),
           from: node.id,
-          to: target,
+          to: destination,
         });
       }
     }
 
-    // Event links
+    // Fetches all event links of all nodes.
     if (node.eventConnectedTo) {
-      for (const target of node.eventConnectedTo) {
+      for (const destination of node.eventConnectedTo) {
         eventLinks.push({
           id: uuidv4(),
           from: node.id,
-          to: target,
+          to: destination,
         });
       }
     }
   }
 
-    let edges: any = {
-        lines: hardLinks,
-        softLines: softLinks,
-        eventLines: eventLinks
-    }
+  // Creates an edges object.
+  let edges: any = {
+    lines: hardLinks,
+    softLines: softLinks,
+    eventLines: eventLinks
+  }
 
-    return edges;
+  return edges;
 }
 
+/**
+ * Deserializes a yaml string and reconstructs the graph object used for the display of nodes on the canvas.
+ *
+ * @param yamlString - Yaml string which contains the serialized graph.
+ * @returns Reconstructed graph object.
+ */
 export function deserializeGraph(yamlString: string): Graph {
+  // NameToIdMap is an inverse map of the one used during serialization. It maps the internal deterministic name
+  // into a unique node ID (either the one that was saved in the yaml file, or a newly generated one).
   const nameToIdMap = new Map<string, string>();
   const parsed = yaml.load(yamlString) as any;
   const graph: Graph = [];
 
+  // If any error occurs during the parsing of the yaml file, an exception is generated indicating an error.
   if (!parsed || typeof parsed !== "object") {
-    throw new Error("Invalid YAML: root is not an object");
+    throw new Error("Invalid YAML file.");
   }
-
   const chart = parsed.chart ?? {};
 
-  // Prvo se mapiraju svi cvorovi iz internih imena u IDeve, da bi grane imale sve definisane cvorove!
+  // Firstly, all nodes are visited so that the map of IDs can be initialized. This is necessary, because edges
+  // are processed during the visit of each node, in order for all nodes to be defined at that point.
   for (const [internalName, dsObj] of Object.entries(chart.dataSources ?? {})) {
     const ds = dsObj as any;
-    ds.id = ensureId(ds.id);
+    ds.id = checkID(ds.id);
     nameToIdMap.set(internalName, ds.id);
   }
   for (const [internalName, spObj] of Object.entries(chart.storedProcedures ?? {})) {
     const sp = spObj as any;
-    sp.id = ensureId(sp.id);
+    sp.id = checkID(sp.id);
     nameToIdMap.set(internalName, sp.id);
   }
   for (const [internalName, etObj] of Object.entries(chart.eventTriggers ?? {})) {
     const et = etObj as any;
-    et.id = ensureId(et.id);
+    et.id = checkID(et.id);
     nameToIdMap.set(internalName, et.id);
   }
   for (const [internalName, evObj] of Object.entries(chart.events ?? {})) {
     const ev = evObj as any;
-    ev.id = ensureId(ev.id);
+    ev.id = checkID(ev.id);
     nameToIdMap.set(internalName, ev.id);
   }
 
-  // --- DataSources ---
+  // All data source objects are visited and an appropriate IDataSource object is created for each one.
+  // An array of node IDs is determined for each link type using the nameToId map, because in the serialized graph
+  // only internal names were used for the structure, not the IDs.
   for (const [internalName, dsObj] of Object.entries(chart.dataSources ?? {})) {
     const ds = dsObj as any;
     const node: IDataSource = {
@@ -122,7 +158,9 @@ export function deserializeGraph(yamlString: string): Graph {
     graph.push(node);
   }
 
-  // --- StoredProcedures ---
+  // All stored procedure objects are visited and an appropriate IUniKernel object is created for each one.
+  // An array of node IDs is determined for each link type using the nameToId map, because in the serialized graph
+  // only internal names were used for the structure, not the IDs.
   for (const [internalName, spObj] of Object.entries(chart.storedProcedures ?? {})) {
     const sp = spObj as any;
     const node: IUniKernel = {
@@ -151,7 +189,7 @@ export function deserializeGraph(yamlString: string): Graph {
     graph.push(node);
   }
 
-  // --- EventTriggers ---
+  // Similarly, all event trigger objects are visited and an appropriate IUniKernel object is created for each one.
   for (const [internalName, etObj] of Object.entries(chart.eventTriggers ?? {})) {
     const et = etObj as any;
     const node: IUniKernel = {
@@ -171,7 +209,7 @@ export function deserializeGraph(yamlString: string): Graph {
       networks: et.features?.networks,
       ports: et.features?.ports,
       volumes: et.features?.volumes,
-      targets: et .features?.targets,
+      targets: et.features?.targets,
       envVars: et.features?.envVars,
       connectedTo: et.links?.hardLinks?.map((l: any) => nameToIdMap.get(l.destination)) ?? [],
       softConnectedTo: et.links?.softLinks?.map((l: any) => nameToIdMap.get(l.destination)) ?? [],
@@ -180,7 +218,8 @@ export function deserializeGraph(yamlString: string): Graph {
     graph.push(node);
   }
 
-  // --- Events ---
+  // Similarly, all event objects are visited and an appropriate IUniKernel object is created for each one.
+  // The only difference is the presence of the topic field, which was absent in stored procedures and event triggers.
   for (const [internalName, evObj] of Object.entries(chart.events ?? {})) {
     const ev = evObj as any;
     const node: IUniKernel = {
@@ -214,17 +253,22 @@ export function deserializeGraph(yamlString: string): Graph {
 }
 
 /**
- * Assign x,y coordinates to nodes in a simple grid layout by type.
+ * Determines the position of each node on the canvas so that nodes do not overlap.
+ *
+ * @param graph - A graph containing all the nodes that need to be laid out.
+ * @returns void.
  */
 export function layoutGraph(graph: Graph): void {
+  // Coordinates of the upper left corner of the canvas part which will actually be used.
   const startX = 100;
   const startY = 70;
+  // Horizontal and vertical gap between nodes.
   const xGap = 250;
   const yGap = 150;
 
-  // Group nodes by type
+  // Nodes are grouped by type, as they will be displayed in columns (one column per node type) in the defined order.
   const typeOrder: EShapeType[] = [EShapeType.STORED_PROCEDURE, EShapeType.DATA_SOURCE, EShapeType.EVENT_TRIGGER, EShapeType.EVENT];
-  const groups: Map<EShapeType, Node[]> = new Map([ 
+  const groups: Map<EShapeType, Node[]> = new Map([
     [EShapeType.DATA_SOURCE, []],
     [EShapeType.STORED_PROCEDURE, []],
     [EShapeType.EVENT_TRIGGER, []],
@@ -235,11 +279,14 @@ export function layoutGraph(graph: Graph): void {
     groups.get(node.type)?.push(node);
   }
 
+  // The outer loop iterates through node types and determines which column in currently used (moves horizontally).
   let x = startX;
   for (const type of typeOrder) {
     const nodes = groups.get(type);
     if (!nodes) continue;
 
+    // The inner loop iterates through nodes of current node type, and determines the vertical position of each node
+    // (moves vertically).
     let y = startY;
     for (const node of nodes) {
       node.x = x;
