@@ -5,6 +5,12 @@ export enum EShapeType {
   DATA_SOURCE = "data_source",
 }
 
+export enum ELineType {
+  HARD_LINK = "hard",
+  SOFT_LINK = "soft",
+  EVENT_LINK = "event"
+}
+
 export interface IShape {
   id: string;
   type: EShapeType;
@@ -13,7 +19,7 @@ export interface IShape {
   isSelected: boolean;
   connectedTo?: string[];
   softConnectedTo?: string[];
-  eventConnectedTo?: string[]; // Samo za EventTrigger
+  eventConnectedTo?: string[];
   name: string;
 }
 
@@ -48,3 +54,6 @@ export interface ILine {
   from: string;
   to: string;
 }
+
+export type Node = IShape;
+export type Graph = IShape[];

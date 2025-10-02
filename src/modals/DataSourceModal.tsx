@@ -26,7 +26,7 @@ export const DataSourceModal: React.FC<DataSourceModalProps> = ({
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center">
         <DialogPanel className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-          <DialogTitle className="text-lg font-bold mb-4">
+          <DialogTitle className="text-lg font-bold mb-4 text-black">
             Data Source
           </DialogTitle>
           <form

@@ -56,7 +56,7 @@ export const UniKernelModal: React.FC<UniKernelModalProps> = ({
     <Dialog open={open} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center">
-        <DialogPanel className="bg-white rounded-lg shadow-lg p-6 w-full h-full overflow-y-auto max-w-md">
+        <DialogPanel className="bg-white rounded-lg shadow-lg p-6 w-full overflow-y-auto max-w-md">
           <DialogTitle className="text-lg font-bold mb-4 text-black">
             Unikernel Settings
           </DialogTitle>
