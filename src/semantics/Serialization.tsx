@@ -35,13 +35,13 @@ export function checkSemanticAnalysisSuccess(diagnosticsMap: Map<Node, Diagnosti
  * Performs a serialization run on the provided graph.
  *
  * @param graph - The Graph object to be analyzed.
- * @returns Boolean value indicating the success of the serialization.
+ * @returns String containing the YAML data or an empty string in case of an error.
  */
-export function performGraphSerialization(graph: Graph): boolean {
+export function performGraphSerialization(graph: Graph): string {
   // Checks if the graph has any semantic errors before proceeding with serialization.
   if (!checkSemanticAnalysisSuccess(performGraphSemanticAnalysis(graph))) {
     console.log("Graph has semantic errors. Aborting serialization.");
-    return false;
+    return "";
   }
 
   const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
@@ -49,9 +49,7 @@ export function performGraphSerialization(graph: Graph): boolean {
   analyzer.run(serializationVisitor);
 
   const yaml: string = serializationVisitor.getYAML();
-  downloadYaml(yaml);
-  console.log(yaml);
-  return true;
+  return yaml;
 }
 
 /**

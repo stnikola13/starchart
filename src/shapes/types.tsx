@@ -57,3 +57,15 @@ export interface ILine {
 
 export type Node = IShape;
 export type Graph = IShape[];
+
+export interface ISettings {
+  apiVersion: string;
+  schemaVersion: string;
+  kind: string;
+  name: string;
+  maintainer: string;
+  description: string;
+  labels: string[];
+  engine: string;
+  visibility: string;
+}

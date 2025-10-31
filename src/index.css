@@ -64,6 +64,17 @@ button:focus-visible {
   border-color: #a8acff;
 }
 
+.button-secondary {
+  background-color: #64baff;
+  border-color: #64baff;
+  color: white;
+  margin-left: 1%;
+  margin-right: 1%;
+}
+.button-secondary:hover {
+  border-color: #646cff;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
