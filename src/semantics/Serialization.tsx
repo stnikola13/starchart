@@ -1,4 +1,4 @@
-import type { Graph, Node } from "../shapes/types";
+import type { Graph, ISettings, Node } from "../shapes/types";
 import { ESeverity, type Diagnostic } from "./DiagnosticReporter";
 import { GraphAnalyzer } from "./GraphAnalyzer";
 import { SemanticVisitor } from "./SemanticVisitor";
@@ -35,9 +35,10 @@ export function checkSemanticAnalysisSuccess(diagnosticsMap: Map<Node, Diagnosti
  * Performs a serialization run on the provided graph.
  *
  * @param graph - The Graph object to be analyzed.
+ * @param schemaData - The Settings object containing all schema and chart metadata.
  * @returns String containing the YAML data or an empty string in case of an error.
  */
-export function performGraphSerialization(graph: Graph): string {
+export function performGraphSerialization(graph: Graph, schemaData: ISettings): string {
   // Checks if the graph has any semantic errors before proceeding with serialization.
   if (!checkSemanticAnalysisSuccess(performGraphSemanticAnalysis(graph))) {
     console.log("Graph has semantic errors. Aborting serialization.");
@@ -45,7 +46,7 @@ export function performGraphSerialization(graph: Graph): string {
   }
 
   const analyzer: GraphAnalyzer = new GraphAnalyzer(graph);
-  const serializationVisitor: SerializationVisitor = new SerializationVisitor();
+  const serializationVisitor: SerializationVisitor = new SerializationVisitor(schemaData);
   analyzer.run(serializationVisitor);
 
   const yaml: string = serializationVisitor.getYAML();

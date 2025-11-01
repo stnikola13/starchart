@@ -1,4 +1,4 @@
-import { type Node, ELineType, EShapeType, type IDataSource, type IUniKernel } from "../shapes/types";
+import { type Node, ELineType, EShapeType, type IDataSource, type IUniKernel, type ISettings } from "../shapes/types";
 import type { DiagnosticReporter } from "./DiagnosticReporter";
 import type { GraphVisitor } from "./GraphVisitor";
 import yaml from "js-yaml";
@@ -20,34 +20,32 @@ export class SerializationVisitor implements GraphVisitor {
   /**
    * Initializes the global schema data and chart metadata. If no data is provided, it's substituted by default values.
    *
-   * @param schemaData - An object containing the following fields: apiVersion, schemaVersion, kind.
-   * @param chartMetadata - An object containing the following fields: name, maintainer, description, labels.
+   * @param schemaData - An object containing the schema data and chart metadata.
    * @returns void.
    */
-  constructor(schemaData?: any, chartMetadata?: any) {
-    if (schemaData) this.schemaData = schemaData;
-    else {
-      // Default schema data (if not provided).
-      this.schemaData = {
-        apiVersion: "v1",
-        schemaVersion: "v1",
-        kind: "StarChart",
-      };
+  constructor(schemaData: ISettings) {
+    this.schemaData = {
+      apiVersion: schemaData?.apiVersion ?? "v1",
+      schemaVersion: schemaData?.schemaVersion ?? "v1",
+      kind: schemaData?.kind ?? "StarChart",
+    };
+    
+    let labelPairs = new Map<string, string>();
+    for (const label of schemaData.labels || []) {
+      const parts = label.split("=");
+      if (parts.length === 2) {
+        labelPairs.set(parts[0].trim(), parts[1].trim());
+      }
     }
 
-    if (chartMetadata) this.chartMetadata = chartMetadata;
-    else {
-      // Default chart metadata (if not provided).
-      this.chartMetadata = {
-        name: "Test",
-        maintainer: "Test",
-        description: "Hello World",
-        labels: {
-          k1: "v1",
-          k2: "v2",
-        },
-      };
-    }
+    this.chartMetadata = {
+      name: schemaData?.name ?? "Untitled Chart",
+      maintainer: schemaData?.maintainer ?? "Anonymous",
+      description: schemaData?.description ?? "",
+      visibility: schemaData?.visibility ?? "public",
+      engine: schemaData?.engine ?? "unikraft",
+      labels: labelPairs,
+    };
   }
 
   /**
@@ -328,9 +326,9 @@ export class SerializationVisitor implements GraphVisitor {
   private assembleOutput(): void {
     // Create data object and initialize schema data.
     let data: any = {
-      apiVersion: this.schemaData.apiVersion ?? "v1",
-      schemaVersion: this.schemaData.schemaVersion ?? "v1",
-      kind: this.schemaData.kind ?? "StarChart",
+      apiVersion: this.schemaData.apiVersion,
+      schemaVersion: this.schemaData.schemaVersion,
+      kind: this.schemaData.kind,
     };
 
     // Create metadata object and initialize the metadata.
@@ -341,11 +339,17 @@ export class SerializationVisitor implements GraphVisitor {
       metadata["maintainer"] = this.chartMetadata.maintainer;
     if (this.chartMetadata.description)
       metadata["description"] = this.chartMetadata.description;
-    if (
-      this.chartMetadata.labels &&
-      Object.keys(this.chartMetadata.labels).length > 0
-    )
-      metadata["labels"] = this.chartMetadata.labels;
+    if (this.chartMetadata.visibility)
+      metadata["visibility"] = this.chartMetadata.visibility;
+    if (this.chartMetadata.engine)
+      metadata["engine"] = this.chartMetadata.engine;
+    if (this.chartMetadata.labels && this.chartMetadata.labels.size > 0) {
+      let labelObj: any = {};
+      for (const [key, value] of this.chartMetadata.labels) {
+        labelObj[key] = value;
+      }
+      metadata["labels"] = labelObj;
+    }
     if (Object.keys(metadata).length > 0) data["metadata"] = metadata;
 
     // Clean up empty links arrays (if they are empty, they shouldn't be in the output at all).

@@ -40,7 +40,6 @@ function App() {
   const [semanticAnalysisReport, setSemanticAnalysisReport] = useState<Map<Node, Diagnostic[]>>(new Map());
   const [deserializationError, setDeserializationError] = useState<string>("");
 
-  const [yamlContent, setYamlContent] = useState<string>("");
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settings, setSettings] = useState<ISettings>({
     apiVersion: "v1",
@@ -277,7 +276,7 @@ function App() {
     reader.onload = (e) => {
       const content = e.target?.result;
       if (typeof content === 'string') {
-        const graph = performGraphDeserialization(content);
+        const [graph, schemaData] = performGraphDeserialization(content);
 
         // If an error occurred during reconstruction.
         if (graph.length == 0) {
@@ -291,6 +290,7 @@ function App() {
         const semanticCheck = checkSemanticAnalysisSuccess(semanticAnalysisResults);
         if (semanticCheck) {
           const edges = getGraphEdges(graph);
+          setSettings(schemaData);
           setShapes(graph);
           setLines(edges.lines);
           setSoftLines(edges.softLines);
@@ -360,10 +360,9 @@ function App() {
           }}>Load from file
         </button>
         <button className="button-main" onClick={() => {
-              setSemanticAnalysisReport(performGraphSemanticAnalysis(shapes));
-              const yaml = performGraphSerialization(shapes);
-              setYamlContent(yaml);
-              if (yaml.length > 0) {
+              const semanticAnalysisResults = performGraphSemanticAnalysis(shapes);
+              setSemanticAnalysisReport(semanticAnalysisResults);
+              if (semanticAnalysisResults.size == 0) {
                 setShowSettingsModal(true);
               }
               else {
@@ -427,8 +426,11 @@ function App() {
             setShowSettingsModal(false);
           }}
           onSubmit={(data) => {
-            setSettings(data); 
-            downloadYaml(yamlContent);
+            const chartSettings = data;
+            setSettings(chartSettings); 
+
+            const yaml = performGraphSerialization(shapes, chartSettings);
+            downloadYaml(yaml, `${chartSettings.name}.yaml`);
           }}
           initial={settings}
         />

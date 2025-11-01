@@ -1,6 +1,6 @@
 import yaml from "js-yaml";
 import { v4 as uuidv4 } from "uuid";
-import { type IDataSource, type IUniKernel, type Node, type Graph, EShapeType, type ILine } from "../shapes/types";
+import { type IDataSource, type IUniKernel, type Node, type Graph, EShapeType, type ILine, type ISettings } from "../shapes/types";
 
 /**
  * Returns a node's ID if it exists, and in case it does not, it generates a new unique identifier.
@@ -17,22 +17,23 @@ function checkID(id?: string): string {
  * Calls the function that determines the coordinates of the elements that are going to be displayed on the canvas.
  *
  * @param yamlString - Yaml string which contains the serialized graph.
- * @returns Reconstructed graph object.
+ * @returns Reconstructed graph object and an object containing schema and chart metadata.
  */
-export function performGraphDeserialization(yamlString: string): Graph {
+export function performGraphDeserialization(yamlString: string): [Graph, ISettings] {
   try {
     // Calls the function that deserializes the yaml file and reconstructs the array of shapes.
     // Calls the function that lays out all the elements by using an algorithm to determine the x and y
     // coordinates of each node.
     // Semantic analysis will be performed on the graph outside of this function.
-    const graph: Graph = deserializeGraph(yamlString);
+    const [graph, schemaData]: [Graph, ISettings] = deserializeGraph(yamlString);
     layoutGraph(graph);
     console.log(graph);
-    return graph;
+    console.log(schemaData);
+    return [graph, schemaData];
   }
   catch (err) {
     // In case of any error during deserialiation, an empty graph is returned as an indicator.
-    return [];
+    return [[], {} as ISettings];
   }
 }
 
@@ -97,9 +98,9 @@ export function getGraphEdges(graph: Graph): any {
  * Deserializes a yaml string and reconstructs the graph object used for the display of nodes on the canvas.
  *
  * @param yamlString - Yaml string which contains the serialized graph.
- * @returns Reconstructed graph object.
+ * @returns Reconstructed graph object and an object containing schema and chart metadata.
  */
-export function deserializeGraph(yamlString: string): Graph {
+export function deserializeGraph(yamlString: string): [Graph, ISettings] {
   // NameToIdMap is an inverse map of the one used during serialization. It maps the internal deterministic name
   // into a unique node ID (either the one that was saved in the yaml file, or a newly generated one).
   const nameToIdMap = new Map<string, string>();
@@ -249,7 +250,25 @@ export function deserializeGraph(yamlString: string): Graph {
     graph.push(node);
   }
 
-  return graph;
+  const chartMetadata = parsed.metadata ?? {};
+  let labelPairs = [];
+  for (const [key, value] of Object.entries(chartMetadata.labels ?? {})) {
+    labelPairs.push(`${key}=${value}`);
+  }
+
+  const schemaData: ISettings = {
+    apiVersion: parsed.apiVersion ?? "v1",
+    schemaVersion: parsed.schemaVersion ?? "v1",
+    kind: parsed.kind ?? "StarChart",
+    engine: chartMetadata.engine ?? "unikraft",
+    visibility: chartMetadata.visibility ?? "public",
+    name: chartMetadata.name ?? "Untitled Chart",
+    maintainer: chartMetadata.maintainer ?? "Anonymous",
+    description: chartMetadata.description ?? "",
+    labels: labelPairs
+  };
+
+  return [graph, schemaData];
 }
 
 /**

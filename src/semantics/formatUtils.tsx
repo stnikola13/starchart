@@ -190,3 +190,33 @@ export function checkEnvironmentVariableFormat(str: string): boolean {
 export function checkMemoryFormat(str: string): boolean {
   return /^([1-9][0-9]*)([KMG]i?)$/.test(str);
 }
+
+/**
+ * Checks if the chart name is properly formatted.
+ *
+ * @param str - The string that is checked.
+ * @returns Boolean value indicating whether the chart name string is properly formatted.
+ */
+export function checkChartNameFormat(str: string): boolean {
+  return isAlphanumeric(str);
+}
+
+/**
+ * Checks if the chart maintainer name is properly formatted. It can only contain alphanumeric characters and spaces.
+ *
+ * @param str - The string that is checked.
+ * @returns Boolean value indicating whether the chart maintainer name string is properly formatted.
+ */
+export function checkChartMaintainerFormat(str: string): boolean {
+  return isAlphanumeric(str);
+}
+
+/**
+ * Checks if the chart label is properly formatted. It has to be formatted as 'key=value'.
+ *
+ * @param str - The string that is checked.
+ * @returns Boolean value indicating whether the label string is properly formatted.
+ */
+export function checkChartLabelFormat(str: string): boolean {
+  return /^[a-zA-Z_][a-zA-Z0-9_]*=.+$/.test(str);
+}

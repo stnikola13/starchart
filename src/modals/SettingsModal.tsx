@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { type ISettings } from "../shapes/types";
+import { checkChartLabelFormat, checkChartMaintainerFormat, checkChartNameFormat } from "../semantics/formatUtils";
 
 interface SettingsModalProps {
   open: boolean;
@@ -13,18 +14,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   open,
   onClose,
   onSubmit,
-  initial,
+  initial
 }) => {
   const [data, setData] = useState<ISettings>(initial);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const [labelInput, setLabelInput] = useState<string>("");
   const [labels, setLabels] = useState<string[]>(initial.labels || []);
 
-  
-    console.log(data);
-
   React.useEffect(() => {
     setData(initial);
+    setLabels(initial.labels || []);
   }, [initial]);
 
   const addToList = (
@@ -58,19 +58,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              onSubmit({
-                ...initial,
-                name: data?.name!,
-                maintainer: data?.maintainer!,
-                description: data?.description!,
-                labels: data?.labels!,
-                engine: data?.engine!,
-                visibility: data?.visibility!
-              });
-              onClose();
+
+              const errorMsg = checkChartDataValidity(data, labels);
+              if (errorMsg) {
+                setErrorMessage(errorMsg);
+              }
+              else {
+                setErrorMessage("");
+                onSubmit({
+                  ...initial,
+                  name: data?.name!,
+                  maintainer: data?.maintainer!,
+                  description: data?.description!,
+                  labels: labels!,
+                  engine: data?.engine!,
+                  visibility: data?.visibility!
+                });
+                onClose();
+              }
             }}
           >
-            {/* One line text inputs */}
             <div className="mb-3">
               <label className="block text-sm font-medium mb-1 text-black">
                 Name
@@ -193,6 +200,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onChange={(e) => setData({ ...data!, description: e.target.value })}
               />
             </div>
+            {(errorMessage) && (
+              <div className="flex justify-center mb-3 mt-5">
+                <label className="block text-sm font-medium mb-1 text-red-500">
+                  {errorMessage}
+                </label>
+              </div>
+            )}
             <div className="flex justify-end gap-2 mt-4">
               <button
                 type="button"
@@ -217,3 +231,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </Dialog>
   );
 };
+
+function checkChartDataValidity(data: ISettings, labels: string[]): string {
+  let errorMessage = "";
+
+  if (!data.name) {
+    errorMessage = "Chart name cannot be empty.";
+  }
+  else if (!checkChartNameFormat(data.name)) {
+    errorMessage = "Chart name contains invalid characters.";
+  }
+  else if (!data.maintainer) {
+    errorMessage = "Chart maintainer has to be defined.";
+  }
+  else if (!checkChartMaintainerFormat(data.maintainer)) {
+    errorMessage = "Chart maintainer name contains invalid characters.";
+  }
+  else {
+    for (const label of labels || []) {
+      if (!checkChartLabelFormat(label)) {
+        errorMessage = `Label "${label}" is not properly formatted. Use "key=value" format.`;
+        break;
+      }
+    }
+  }
+
+  return errorMessage;
+}
