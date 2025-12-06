@@ -141,6 +141,12 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
   // only internal names were used for the structure, not the IDs.
   for (const [internalName, dsObj] of Object.entries(chart.dataSources ?? {})) {
     const ds = dsObj as any;
+
+    let labelPairs = [];
+    for (const [key, value] of Object.entries(ds.labels ?? {})) {
+      labelPairs.push(`${key}=${value}`);
+    }
+
     const node: IDataSource = {
       id: ds.id,
       type: EShapeType.DATA_SOURCE,
@@ -152,6 +158,7 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
       resourceName: ds.resourceName,
       dataType: ds.type,
       description: ds.description,
+      labels: labelPairs,
       connectedTo: ds.links?.hardLinks?.map((l: any) => nameToIdMap.get(l.destination)) ?? [],
       softConnectedTo: ds.links?.softLinks?.map((l: any) => nameToIdMap.get(l.destination)) ?? [],
       eventConnectedTo: ds.links?.eventLinks?.map((l: any) => nameToIdMap.get(l.destination)) ?? []
@@ -164,6 +171,12 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
   // only internal names were used for the structure, not the IDs.
   for (const [internalName, spObj] of Object.entries(chart.storedProcedures ?? {})) {
     const sp = spObj as any;
+
+    let labelPairs = [];
+    for (const [key, value] of Object.entries(sp.metadata?.labels ?? {})) {
+      labelPairs.push(`${key}=${value}`);
+    }
+
     const node: IUniKernel = {
       id: sp.id,
       type: EShapeType.STORED_PROCEDURE,
@@ -173,6 +186,7 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
       name: sp.metadata?.name ?? internalName,
       image: sp.metadata?.image,
       prefix: sp.metadata?.prefix,
+      labels: labelPairs,
       disableVirt: sp.control?.disableVirtualization,
       runDetached: sp.control?.runDetached,
       removeOnStop: sp.control?.removeOnStop,
@@ -193,6 +207,12 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
   // Similarly, all event trigger objects are visited and an appropriate IUniKernel object is created for each one.
   for (const [internalName, etObj] of Object.entries(chart.eventTriggers ?? {})) {
     const et = etObj as any;
+
+    let labelPairs = [];
+    for (const [key, value] of Object.entries(et.metadata?.labels ?? {})) {
+      labelPairs.push(`${key}=${value}`);
+    }
+
     const node: IUniKernel = {
       id: et.id,
       type: EShapeType.EVENT_TRIGGER,
@@ -202,6 +222,7 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
       name: et.metadata?.name ?? internalName,
       image: et.metadata?.image,
       prefix: et.metadata?.prefix,
+      labels: labelPairs,
       disableVirt: et.control?.disableVirtualization,
       runDetached: et.control?.runDetached,
       removeOnStop: et.control?.removeOnStop,
@@ -223,6 +244,12 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
   // The only difference is the presence of the topic field, which was absent in stored procedures and event triggers.
   for (const [internalName, evObj] of Object.entries(chart.events ?? {})) {
     const ev = evObj as any;
+
+    let labelPairs = [];
+    for (const [key, value] of Object.entries(ev.metadata?.labels ?? {})) {
+      labelPairs.push(`${key}=${value}`);
+    }
+
     const node: IUniKernel = {
       id: ev.id,
       type: EShapeType.EVENT,
@@ -233,6 +260,7 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
       image: ev.metadata?.image,
       prefix: ev.metadata?.prefix,
       topic: ev.metadata?.topic,
+      labels: labelPairs,
       disableVirt: ev.control?.disableVirtualization,
       runDetached: ev.control?.runDetached,
       removeOnStop: ev.control?.removeOnStop,

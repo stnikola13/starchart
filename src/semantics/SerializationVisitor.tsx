@@ -79,6 +79,27 @@ export class SerializationVisitor implements GraphVisitor {
       if (ds.path) data["path"] = ds.path;
       if (ds.resourceName) data["resourceName"] = ds.resourceName;
       if (ds.description) data["description"] = ds.description;
+
+      // Metdata labels
+      //let metadata: any = {};
+      let labelPairs = new Map<string, string>();
+      for (const label of ds.labels || []) {
+        const parts = label.split("=");
+        if (parts.length === 2) {
+          labelPairs.set(parts[0].trim(), parts[1].trim());
+        }
+      }
+      let labelObj: any = {};
+      if (labelPairs && labelPairs.size > 0) {
+        for (const [key, value] of labelPairs) {
+          labelObj[key] = value;
+        }
+        //metadata["labels"] = labelObj;
+        data["labels"] = labelObj;
+      }
+
+      //if (Object.keys(metadata).length > 0) data["metadata"] = metadata;
+
       this.dataSources[name] = data;
     } 
     else if (kind === EShapeType.STORED_PROCEDURE) {
@@ -94,6 +115,22 @@ export class SerializationVisitor implements GraphVisitor {
       metadata["name"] = sp.name;
       if (sp.image) metadata["image"] = sp.image;
       if (sp.prefix) metadata["prefix"] = sp.prefix;
+
+      // Metdata labels
+      let labelPairs = new Map<string, string>();
+      for (const label of sp.labels || []) {
+        const parts = label.split("=");
+        if (parts.length === 2) {
+          labelPairs.set(parts[0].trim(), parts[1].trim());
+        }
+      }
+      if (labelPairs && labelPairs.size > 0) {
+        let labelObj: any = {};
+        for (const [key, value] of labelPairs) {
+          labelObj[key] = value;
+        }
+        metadata["labels"] = labelObj;
+      }
 
       // Control
       control["disableVirtualization"] = sp.disableVirt;
@@ -135,6 +172,23 @@ export class SerializationVisitor implements GraphVisitor {
       metadata["name"] = et.name;
       if (et.image) metadata["image"] = et.image;
       if (et.prefix) metadata["prefix"] = et.prefix;
+      if (et.labels && et.labels.length > 0) metadata["labels"] = et.labels;
+
+      // Metdata labels
+      let labelPairs = new Map<string, string>();
+      for (const label of et.labels || []) {
+        const parts = label.split("=");
+        if (parts.length === 2) {
+          labelPairs.set(parts[0].trim(), parts[1].trim());
+        }
+      }
+      if (labelPairs && labelPairs.size > 0) {
+        let labelObj: any = {};
+        for (const [key, value] of labelPairs) {
+          labelObj[key] = value;
+        }
+        metadata["labels"] = labelObj;
+      }
 
       // Control
       control["disableVirtualization"] = et.disableVirt;
@@ -176,6 +230,23 @@ export class SerializationVisitor implements GraphVisitor {
       if (ev.image) metadata["image"] = ev.image;
       if (ev.prefix) metadata["prefix"] = ev.prefix;
       if (ev.topic) metadata["topic"] = ev.topic;
+      if (ev.labels && ev.labels.length > 0) metadata["labels"] = ev.labels;
+
+      // Metdata labels
+      let labelPairs = new Map<string, string>();
+      for (const label of ev.labels || []) {
+        const parts = label.split("=");
+        if (parts.length === 2) {
+          labelPairs.set(parts[0].trim(), parts[1].trim());
+        }
+      }
+      if (labelPairs && labelPairs.size > 0) {
+        let labelObj: any = {};
+        for (const [key, value] of labelPairs) {
+          labelObj[key] = value;
+        }
+        metadata["labels"] = labelObj;
+      }
 
       // Control
       control["disableVirtualization"] = ev.disableVirt;

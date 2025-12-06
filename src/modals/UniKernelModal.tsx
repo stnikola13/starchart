@@ -22,11 +22,13 @@ export const UniKernelModal: React.FC<UniKernelModalProps> = ({
   const [volumeInput, setVolumeInput] = useState("");
   const [targetInput, setTargetInput] = useState("");
   const [envVarInput, setEnvVarInput] = useState("");
+  const [labelInput, setLabelInput] = useState("");
   const [networks, setNetworks] = useState<string[]>(initial.networks || []);
   const [ports, setPorts] = useState<string[]>(initial.ports || []);
   const [volumes, setVolumes] = useState<string[]>(initial.volumes || []);
   const [targets, setTargets] = useState<string[]>(initial.targets || []);
   const [envVars, setEnvVars] = useState<string[]>(initial.envVars || []);
+  const [labels, setLabels] = useState<string[]>(initial.labels || []);
 
   React.useEffect(() => {
     setData(initial);
@@ -79,6 +81,7 @@ export const UniKernelModal: React.FC<UniKernelModalProps> = ({
                 volumes: volumes!,
                 targets: targets!,
                 envVars: envVars!,
+                labels: labels!
               });
               onClose();
             }}
@@ -177,6 +180,48 @@ export const UniKernelModal: React.FC<UniKernelModalProps> = ({
             </div>
 
             {/* Multi option lists */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1 text-black">
+                Labels
+              </label>
+              <div className="flex gap-2 mb-1">
+                <input
+                  className="flex-1 border rounded px-2 py-1 text-black"
+                  value={labelInput}
+                  onChange={(e) => setLabelInput(e.target.value)}
+                  placeholder="label=value"
+                />
+                <button
+                  type="button"
+                  className="px-2 py-1 bg-gray-200 rounded text-black"
+                  onClick={() =>
+                    addToList(
+                      labelInput,
+                      setLabelInput,
+                      labels,
+                      setLabels
+                    )
+                  }
+                >
+                  Add
+                </button>
+              </div>
+              {labels.map((lab, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 text-sm mb-1 text-black"
+                >
+                  <span>{lab}</span>
+                  <button
+                    type="button"
+                    className="text-red-500"
+                    onClick={() => removeFromList(i, labels, setLabels)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
             <div className="mb-3">
               <label className="block text-sm font-medium mb-1 text-black">
                 Networks

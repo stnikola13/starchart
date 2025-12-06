@@ -28,6 +28,7 @@ export interface IDataSource extends IShape {
   resourceName?: string;
   dataType?: "file" | "folder";
   description?: string;
+  labels?: string[];
 }
 
 export interface IUniKernel extends IShape {
@@ -47,6 +48,7 @@ export interface IUniKernel extends IShape {
   networks?: string[];
   ports?: string[];
   topic?: string;
+  labels?: string[];
 }
 
 export interface ILine {

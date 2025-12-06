@@ -17,9 +17,32 @@ export const DataSourceModal: React.FC<DataSourceModalProps> = ({
 }) => {
   const [data, setData] = useState<IDataSource>(initial);
 
+  const [labelInput, setLabelInput] = useState("");
+  const [labels, setLabels] = useState<string[]>(initial.labels || []);
+
   React.useEffect(() => {
     setData(initial);
   }, [initial]);
+
+  const addToList = (
+    input: string,
+    setInput: React.Dispatch<React.SetStateAction<string>>,
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    if (input.trim()) {
+      setList([...list, input.trim()]);
+      setInput("");
+    }
+  };
+
+  const removeFromList = (
+    index: number,
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setList(list.filter((_, i) => i !== index));
+  };
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
@@ -39,7 +62,9 @@ export const DataSourceModal: React.FC<DataSourceModalProps> = ({
                 resourceName: data?.resourceName!,
                 dataType: data?.dataType!,
                 description: data?.description!,
+                labels: labels!,
               });
+              console.log(data);
               onClose();
             }}
           >
@@ -96,6 +121,50 @@ export const DataSourceModal: React.FC<DataSourceModalProps> = ({
                 <option value="folder">Folder</option>
               </select>
             </div>
+            
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1 text-black">
+                Labels
+              </label>
+              <div className="flex gap-2 mb-1">
+                <input
+                  className="flex-1 border rounded px-2 py-1 text-black"
+                  value={labelInput}
+                  onChange={(e) => setLabelInput(e.target.value)}
+                  placeholder="label=value"
+                />
+                <button
+                  type="button"
+                  className="px-2 py-1 bg-gray-200 rounded text-black"
+                  onClick={() =>
+                    addToList(
+                      labelInput,
+                      setLabelInput,
+                      labels,
+                      setLabels
+                    )
+                  }
+                >
+                  Add
+                </button>
+              </div>
+              {labels.map((lab, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 text-sm mb-1 text-black"
+                >
+                  <span>{lab}</span>
+                  <button
+                    type="button"
+                    className="text-red-500"
+                    onClick={() => removeFromList(i, labels, setLabels)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
             <div className="mb-3">
               <label className="block text-black text-sm font-medium mb-1">
                 Description

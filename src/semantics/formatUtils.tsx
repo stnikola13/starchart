@@ -202,6 +202,16 @@ export function checkMemoryFormat(str: string): boolean {
 }
 
 /**
+ * Checks if the node label is properly formatted. It has to be formatted as 'key=value'.
+ *
+ * @param str - The string that is checked.
+ * @returns Boolean value indicating whether the label string is properly formatted.
+ */
+export function checkNodeLabelFormat(str: string): boolean {
+  return /^[a-zA-Z_][a-zA-Z0-9_]*=.+$/.test(str);
+}
+
+/**
  * Checks if the chart name is properly formatted.
  *
  * @param str - The string that is checked.

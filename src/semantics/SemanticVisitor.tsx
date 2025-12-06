@@ -1,5 +1,5 @@
 import { type Node, type IDataSource, type IUniKernel, EShapeType, ELineType } from "../shapes/types";
-import { checkEnvironmentVariableFormat, checkImageFormat, checkMemoryFormat, checkNetworkFormat, checkPathFormat, 
+import { checkEnvironmentVariableFormat, checkImageFormat, checkMemoryFormat, checkNetworkFormat, checkNodeLabelFormat, checkPathFormat, 
   checkPortMappingFormat, checkTargetFormat, checkVolumeFormat, isAlphanumeric } from "./formatUtils";
 import { ESeverity, type DiagnosticReporter } from "./DiagnosticReporter";
 import type { GraphVisitor } from "./GraphVisitor";
@@ -106,7 +106,22 @@ export class SemanticVisitor implements GraphVisitor {
           details: { description: data_source.description },
         });
       }
+
+      // Checks if the data source's labels are valid. If not, reports an error.
+      const invalidLabels: any[] = this.checkDataSourceLabels(data_source);
+      if (invalidLabels.length > 0) {
+        reporter.report({
+          id: uuidv4(),
+          message: `Node has invalid labels: ${invalidLabels.join(
+            ", "
+          )}.`,
+          nodeId: data_source.id,
+          severity: ESeverity.ERROR,
+          details: { labels: invalidLabels },
+        });
+      }
     }
+
     // SECTION: StoredProcedure, EventTrigger, Event specific checks.
     else {
       // If the node is not a DataSource, casts the Node to a UniKernel object.
@@ -262,6 +277,20 @@ export class SemanticVisitor implements GraphVisitor {
           nodeId: unikernel.id,
           severity: ESeverity.ERROR,
           details: { memory: unikernel.memory },
+        });
+      }
+
+      // Checks if the unkernel's labels are valid. If not, reports an error.
+      const invalidLabels: any[] = this.checkUniKernelLabels(unikernel);
+      if (invalidLabels.length > 0) {
+        reporter.report({
+          id: uuidv4(),
+          message: `Node has invalid labels: ${invalidLabels.join(
+            ", "
+          )}.`,
+          nodeId: unikernel.id,
+          severity: ESeverity.ERROR,
+          details: { labels: invalidLabels },
         });
       }
 
@@ -450,6 +479,23 @@ export class SemanticVisitor implements GraphVisitor {
     return true;
   }
 
+  /**
+   * Checks if data source labels array is valid. This field is optional, therefore it can be undefined or an empty array.
+   * If it exists, each variable has to follow the appropriate format.
+   *
+   * @param node - The DataSource object that is being checked.
+   * @returns Array of invalid label entries. If the array is empty, all variables are valid.
+   */
+  private checkDataSourceLabels(node: IDataSource): any[] {
+    if (!node.labels || node.labels.length === 0) return [];
+
+    let invalidEntries = [];
+    for (const [_index, label] of node.labels.entries()) {
+      if (!checkNodeLabelFormat(label)) invalidEntries.push(label);
+    }
+    return invalidEntries;
+  }
+
   // SECTION: UniKernel (StoredProcedure, EventTrigger, Event) specific fields.
 
   /**
@@ -606,6 +652,23 @@ export class SemanticVisitor implements GraphVisitor {
     let invalidEntries = [];
     for (const [_index, envVar] of node.envVars.entries()) {
       if (!checkEnvironmentVariableFormat(envVar)) invalidEntries.push(envVar);
+    }
+    return invalidEntries;
+  }
+
+  /**
+   * Checks if unikernel's labels array is valid. This field is optional, therefore it can be undefined or an empty array.
+   * If it exists, each variable has to follow the appropriate format.
+   *
+   * @param node - The UniKernel object that is being checked.
+   * @returns Array of invalid label entries. If the array is empty, all variables are valid.
+   */
+  private checkUniKernelLabels(node: IUniKernel): any[] {
+    if (!node.labels || node.labels.length === 0) return [];
+
+    let invalidEntries = [];
+    for (const [_index, label] of node.labels.entries()) {
+      if (!checkNodeLabelFormat(label)) invalidEntries.push(label);
     }
     return invalidEntries;
   }
