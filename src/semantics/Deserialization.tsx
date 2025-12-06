@@ -265,6 +265,7 @@ export function deserializeGraph(yamlString: string): [Graph, ISettings] {
     name: chartMetadata.name ?? "Untitled Chart",
     maintainer: chartMetadata.maintainer ?? "Anonymous",
     description: chartMetadata.description ?? "",
+    namespace: chartMetadata.namespace ?? "default",
     labels: labelPairs
   };
 

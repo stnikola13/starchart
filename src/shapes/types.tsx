@@ -68,4 +68,5 @@ export interface ISettings {
   labels: string[];
   engine: string;
   visibility: string;
+  namespace: string;
 }

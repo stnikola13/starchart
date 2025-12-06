@@ -42,6 +42,7 @@ export class SerializationVisitor implements GraphVisitor {
       name: schemaData?.name ?? "Untitled Chart",
       maintainer: schemaData?.maintainer ?? "Anonymous",
       description: schemaData?.description ?? "",
+      namespace: schemaData?.namespace ?? "default",
       visibility: schemaData?.visibility ?? "public",
       engine: schemaData?.engine ?? "unikraft",
       labels: labelPairs,
@@ -339,6 +340,8 @@ export class SerializationVisitor implements GraphVisitor {
       metadata["maintainer"] = this.chartMetadata.maintainer;
     if (this.chartMetadata.description)
       metadata["description"] = this.chartMetadata.description;
+    if (this.chartMetadata.namespace)
+      metadata["namespace"] = this.chartMetadata.namespace;
     if (this.chartMetadata.visibility)
       metadata["visibility"] = this.chartMetadata.visibility;
     if (this.chartMetadata.engine)

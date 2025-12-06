@@ -9,6 +9,16 @@ export function isAlphanumeric(str: string): boolean {
 }
 
 /**
+ * Checks if the given string is alphanumeric (contains only letters and numbers).
+ *
+ * @param str - The string that is checked.
+ * @returns Boolean value indicating whether the string is alphanumeric.
+ */
+export function isAlphanumericNoBlanks(str: string): boolean {
+  return /^[a-zA-Z0-9]+$/.test(str);
+}
+
+/**
  * Checks if the given path string is valid (contains only letters, numbers, underscores, hyphens, marks, and dots).
  *
  * @param str - The path string that is checked.
@@ -219,4 +229,14 @@ export function checkChartMaintainerFormat(str: string): boolean {
  */
 export function checkChartLabelFormat(str: string): boolean {
   return /^[a-zA-Z_][a-zA-Z0-9_]*=.+$/.test(str);
+}
+
+/**
+ * Checks if the chart namespace is properly formatted. It can only contain alphanumeric characters.
+ *
+ * @param str - The string that is checked.
+ * @returns Boolean value indicating whether the chart namespace is properly formatted.
+ */
+export function checkChartNamespaceFormat(str: string): boolean {
+  return isAlphanumericNoBlanks(str);
 }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { type ISettings } from "../shapes/types";
-import { checkChartLabelFormat, checkChartMaintainerFormat, checkChartNameFormat } from "../semantics/formatUtils";
+import { checkChartLabelFormat, checkChartMaintainerFormat, checkChartNameFormat, checkChartNamespaceFormat } from "../semantics/formatUtils";
 
 interface SettingsModalProps {
   open: boolean;
@@ -72,7 +72,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   description: data?.description!,
                   labels: labels!,
                   engine: data?.engine!,
-                  visibility: data?.visibility!
+                  visibility: data?.visibility!,
+                  namespace: data?.namespace!
                 });
                 onClose();
               }
@@ -97,6 +98,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="w-full border rounded px-2 py-1 text-black"
                 value={data?.maintainer}
                 onChange={(e) => setData({ ...data!, maintainer: e.target.value })}
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1 text-black">
+                Namespace
+              </label>
+              <input
+                className="w-full border rounded px-2 py-1 text-black"
+                value={data?.namespace}
+                onChange={(e) => setData({ ...data!, namespace: e.target.value })}
                 required
               />
             </div>
@@ -246,6 +258,12 @@ function checkChartDataValidity(data: ISettings, labels: string[]): string {
   }
   else if (!checkChartMaintainerFormat(data.maintainer)) {
     errorMessage = "Chart maintainer name contains invalid characters.";
+  }
+  else if (!data.namespace) {
+    errorMessage = "Namespace cannot be empty.";
+  }
+  else if (!checkChartNamespaceFormat(data.namespace)) {
+    errorMessage = "Namespace contains invalid characters.";
   }
   else {
     for (const label of labels || []) {

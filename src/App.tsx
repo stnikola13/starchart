@@ -50,6 +50,7 @@ function App() {
     name: "Untitled Chart",
     maintainer: "Anonymous",
     description: "",
+    namespace: "default",
     labels: []
   });
 
